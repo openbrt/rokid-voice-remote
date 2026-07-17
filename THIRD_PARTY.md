@@ -14,3 +14,8 @@ responsible for having the right to use those components.
 
 Public BlackSiren source is available separately from Rokid under its own
 license: <https://github.com/Rokid/BlackSiren>.
+
+The optional browser installer uses the open-source `@yume-chan/adb`,
+`@yume-chan/adb-credential-web`, `@yume-chan/adb-daemon-webusb`, and
+`@yume-chan/stream-extra` packages. They are downloaded from npm during the
+web build and remain subject to their respective licenses.

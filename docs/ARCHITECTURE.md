@@ -1,7 +1,8 @@
 # Architecture
 
-The project is independent of `rokid-chatgpt`. It uses two small services and
-does not import, patch, stop, overwrite, or reuse files from that project.
+The runtime is split into small services for recognition, Bluetooth HID, and
+configuration. It does not patch factory libraries or redistribute vendor
+runtime files.
 
 ```text
 microphone array

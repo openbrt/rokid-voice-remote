@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#080b12" />
+    <meta
+      name="description"
+      content="通过 WebUSB 为 Rokid A113 音箱安装离线蓝牙语音遥控固件。"
+    />
+    <title>Rokid Voice Remote · 在线安装</title>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <div class="eyebrow">LOCAL VOICE · BLUETOOTH HID · A113</div>
+        <h1>说一句，<br /><span>按键就到了。</span></h1>
+        <p class="lede">
+          把 Rokid 音箱变成离线语音遥控器。自定义指令、目标设备和遥控键值都在固件配置页完成。
+        </p>
+        <div class="traits" aria-label="项目特性">
+          <span>全程本地识别</span><span>USB 在线安装</span><span>最多 5 条指令</span>
+        </div>
+      </header>
+
+      <section class="installer" aria-labelledby="installer-title">
+        <div class="section-heading">
+          <div>
+            <p class="kicker">WEBUSB / ADB</p>
+            <h2 id="installer-title">安装语音遥控固件</h2>
+          </div>
+          <div id="browser-pill" class="pill">正在检测浏览器</div>
+        </div>
+
+        <ol class="steps">
+          <li id="step-connect" class="step active">
+            <span class="number">01</span>
+            <div><strong>连接音箱</strong><small>从 USB 列表选择已开机的 Rokid</small></div>
+          </li>
+          <li id="step-verify" class="step">
+            <span class="number">02</span>
+            <div><strong>验证设备</strong><small>核对架构与出厂运行时摘要</small></div>
+          </li>
+          <li id="step-install" class="step">
+            <span class="number">03</span>
+            <div><strong>安全安装</strong><small>双重校验后写入应用层固件</small></div>
+          </li>
+          <li id="step-configure" class="step">
+            <span class="number">04</span>
+            <div><strong>配置与配对</strong><small>设置指令、设备和 HID 键值</small></div>
+          </li>
+        </ol>
+
+        <div class="notice">
+          <strong>开始前</strong>
+          <span>
+            请使用桌面版 Chrome 或 Edge。音箱需正常开机并启用 USB ADB；若本机 adb 正在占用 USB，请先运行
+            <code>adb kill-server</code>。
+          </span>
+        </div>
+
+        <label class="consent">
+          <input id="consent" type="checkbox" />
+          <span>
+            我了解安装会停用原厂语音、配网、云服务和 OTA，并记录安装前的服务状态以便卸载恢复。
+          </span>
+        </label>
+
+        <div class="actions">
+          <button id="connect" class="button primary">连接 Rokid</button>
+          <button id="verify" class="button" disabled>验证设备</button>
+          <button id="install" class="button" disabled>安装固件</button>
+          <a id="config-link" class="button success hidden" target="_blank" rel="noreferrer">打开配置页</a>
+        </div>
+
+        <div class="console-wrap">
+          <div class="console-title">
+            <span>安装日志</span><span id="status">等待连接</span>
+          </div>
+          <pre id="console" aria-live="polite">准备就绪。USB 数据不会上传到服务器。</pre>
+        </div>
+      </section>
+
+      <section class="aftercare" aria-labelledby="aftercare-title">
+        <div>
+          <p class="kicker">AFTER INSTALL</p>
+          <h2 id="aftercare-title">装好以后</h2>
+        </div>
+        <div class="after-grid">
+          <article><span>1</span><strong>配对</strong><p>在电视、投影或中控的蓝牙页面搜索 Rokid Voice Remote。</p></article>
+          <article><span>2</span><strong>映射</strong><p>打开固件配置页，选择目标并配置语音指令与遥控键值。</p></article>
+          <article><span>3</span><strong>说话</strong><p>说出“打开投影”等本地指令，音箱发送对应 Bluetooth HID 按键。</p></article>
+        </div>
+      </section>
+
+      <footer>
+        <p>独立社区项目，与 Rokid 无隶属或背书关系。</p>
+        <a href="https://github.com/openbrt/rokid-voice-remote">源码、手动安装与恢复</a>
+      </footer>
+    </main>
+    <noscript>在线安装器需要启用 JavaScript。</noscript>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

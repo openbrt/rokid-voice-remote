@@ -1,5 +1,7 @@
 /build/
 /dist/
 /backups/
+/web/node_modules/
+/web/dist/
 *.swp
 .DS_Store

@@ -1,0 +1,22 @@
+{
+  "name": "rokid-voice-remote-web-installer",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@yume-chan/adb": "2.6.0",
+    "@yume-chan/adb-credential-web": "2.1.0",
+    "@yume-chan/adb-daemon-webusb": "2.3.2",
+    "@yume-chan/stream-extra": "2.6.1"
+  },
+  "devDependencies": {
+    "@types/w3c-web-usb": "1.0.14",
+    "typescript": "7.0.2",
+    "vite": "8.1.5"
+  }
+}

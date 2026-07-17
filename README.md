@@ -1,10 +1,29 @@
 # rokid-voice-remote
 
-把 Amlogic A113 Rokid 音箱变成一只完全离线的蓝牙语音遥控器。它独立于
-`rokid-chatgpt`：不依赖、不修改，也不会接管后者的任何文件。
+把 Amlogic A113 Rokid 音箱变成一只完全离线的蓝牙语音遥控器。语音识别在
+音箱本地完成，电视、投影或中控把它识别成蓝牙键盘/媒体遥控器。
 
 > 当前版本是硬件验证预览版。源码和 A113 交叉编译已纳入发布流程；在你的
 > 电视/投影型号上完成配对和端到端验证前，不应视为稳定版。
+
+## 在线安装
+
+使用桌面版 Chrome 或 Edge 打开：
+
+<https://openbrt.github.io/rokid-voice-remote/>
+
+在线安装器通过 WebUSB 直接建立 ADB 会话，不上传设备数据。它会先核对 A113
+架构和出厂运行时摘要，再下载发布固件，并在浏览器和音箱两端分别校验
+SHA-256 后安装。安装的是可卸载的应用层固件，不是 NAND/分区镜像。
+
+音箱需正常开机并启用 USB ADB。如果本机 `adb` 已占用 USB 接口，先运行：
+
+```sh
+adb kill-server
+```
+
+安装成功后，页面会提供音箱内置配置页的入口。若检测到已有本项目或其他占用
+相同原厂服务的方案，在线安装器会停止，不会在没有本地备份时静默覆盖。
 
 ## 能定义多少条语音命令？
 
@@ -98,7 +117,7 @@ ROKID_SDK_ROOT=/home/csc/rokid_src/home/csc/rokid_src \
 
 产物：`dist/rokid-voice-remote-<version>.tar.gz`。
 
-## 安装与配对
+## 命令行安装与配对
 
 连接音箱 ADB 后：
 
@@ -108,14 +127,15 @@ ROKID_SDK_ROOT=/home/csc/rokid_src/home/csc/rokid_src \
 
 安装器会校验发布清单、CPU 架构和已知工厂库版本，记录原始 systemd 状态，
 停用冲突的 Rokid 应用服务，并启用 HID、离线识别和配置页面三个独立服务。
-若检测到 `/data/rokid-chatgpt`，默认会拒绝继续。明确替换时使用：
+若检测到其他占用同一套服务的社区方案，默认会拒绝继续。明确迁移时使用：
 
 ```sh
 ./tools/usb-install.sh --serial <Rokid序列号> --replace
 ```
 
-工具会先把冲突方案保存到本机 `backups/`，再调用它自己的卸载脚本恢复原始
-systemd 状态，之后安装本项目。使用 `--no-open` 可禁止自动打开浏览器。
+工具会先把冲突方案保存到本机 `backups/`，校验其可恢复状态，再调用原方案的
+卸载脚本恢复 systemd 状态，之后安装本项目。使用 `--no-open` 可禁止自动
+打开浏览器。
 
 接着在电视/投影蓝牙页面搜索 **Rokid Voice Remote** 并配对，把已绑定设备的
 配对后回到配置页选择目标设备。也可用下面第一条命令列出 BSA 数据库中已经
