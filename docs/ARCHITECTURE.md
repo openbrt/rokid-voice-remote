@@ -21,6 +21,25 @@ Bluetooth Classic HID (keyboard / consumer control)
 TV, projector, or a central receiver
 ```
 
+配置面是第三个独立服务：
+
+```text
+browser on trusted LAN
+      |
+HTTP :8090 + X-Config-Token
+      |
+voice_remote_config
+      | validate all rows, ranges and duplicates
+atomic replacement of commands.tsv + targets.conf
+      |
+restart voice listener
+```
+
+静态页面不依赖 CDN。配置令牌由安装器从 `/dev/urandom` 生成，权限为 `0600`，
+通过 URL fragment 导入浏览器的 session storage；fragment 不会随 HTTP 请求发送。
+API 仍要求 `X-Config-Token`，并限制头部、正文和配置大小，拒绝 chunked 请求、
+路径遍历、控制字符、重复短语、未知目标以及越界 HID usage。
+
 ## Why the log bridge exists
 
 The factory Lua callback reports that an AWAKE event occurred but omits the
@@ -53,3 +72,5 @@ projector is not instantaneous.
 Phrase lookup is exact. TSV values are never sourced or evaluated. Target
 names, addresses, report types, usages, key codes, modifiers, and repeat counts
 are validated before reaching the Unix socket and again inside the daemon.
+The configuration page performs equivalent server-side validation before it
+can replace either TSV file; browser-side checks are only a usability layer.

@@ -26,13 +26,16 @@ cleanup() {
 trap cleanup EXIT INT TERM HUP
 
 scp "$PROJECT/src/voice_remote_hid.c" "$HOST:$remote_tmp/voice_remote_hid.c" >/dev/null
+scp "$PROJECT/src/voice_remote_config.c" "$HOST:$remote_tmp/voice_remote_config.c" >/dev/null
 
 # Every client-expanded path below is validated or constant.
 # shellcheck disable=SC2029
-ssh "$HOST" "'$CC' -std=c11 -O2 -Wall -Wextra -fstack-protector-strong -D_FORTIFY_SOURCE=2 -I'$INCLUDE' '$remote_tmp/voice_remote_hid.c' -L'$LIBRARY' -Wl,-z,relro,-z,now -lbsa -lpthread -o '$remote_tmp/voice_remote_hid' && '$STRIP' --strip-unneeded '$remote_tmp/voice_remote_hid' && '$READELF' -h '$remote_tmp/voice_remote_hid' | grep -E 'Class:|Machine:|Type:'"
+ssh "$HOST" "set -e; '$CC' -std=c11 -O2 -Wall -Wextra -fstack-protector-strong -D_FORTIFY_SOURCE=2 -I'$INCLUDE' '$remote_tmp/voice_remote_hid.c' -L'$LIBRARY' -Wl,-z,relro,-z,now -lbsa -lpthread -o '$remote_tmp/voice_remote_hid'; '$CC' -std=c11 -O2 -Wall -Wextra -fstack-protector-strong -D_FORTIFY_SOURCE=2 '$remote_tmp/voice_remote_config.c' -Wl,-z,relro,-z,now -o '$remote_tmp/voice_remote_config'; '$STRIP' --strip-unneeded '$remote_tmp/voice_remote_hid' '$remote_tmp/voice_remote_config'; '$READELF' -h '$remote_tmp/voice_remote_hid' | grep -E 'Class:|Machine:|Type:'; '$READELF' -h '$remote_tmp/voice_remote_config' | grep -E 'Class:|Machine:|Type:'"
 
 mkdir -p "$PROJECT/build"
 scp "$HOST:$remote_tmp/voice_remote_hid" "$PROJECT/build/voice_remote_hid" >/dev/null
+scp "$HOST:$remote_tmp/voice_remote_config" "$PROJECT/build/voice_remote_config" >/dev/null
 chmod 0755 "$PROJECT/build/voice_remote_hid"
+chmod 0755 "$PROJECT/build/voice_remote_config"
 
-echo "BUILD_OK $PROJECT/build/voice_remote_hid"
+echo "BUILD_OK $PROJECT/build/voice_remote_hid $PROJECT/build/voice_remote_config"

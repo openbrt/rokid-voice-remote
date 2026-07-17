@@ -3,7 +3,7 @@ io.stdout:setvbuf("line")
 local ROOT = os.getenv("ROKID_VOICE_REMOTE_ROOT") or "/data/rokid-voice-remote"
 local COMMANDS = ROOT .. "/config/commands.tsv"
 local MANAGED_WORDS = ROOT .. "/state/managed-words"
-local MAX_COMMANDS = 32
+local MAX_COMMANDS = 5
 
 local native = assert(require("rokidsiren"))
 local siren

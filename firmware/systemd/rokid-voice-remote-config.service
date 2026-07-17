@@ -1,0 +1,12 @@
+[Unit]
+Description=Rokid Voice Remote Configuration Page
+After=net_manager.service
+
+[Service]
+Type=simple
+ExecStart=/data/rokid-voice-remote/bin/voice_remote_config serve --root /data/rokid-voice-remote --bind 0.0.0.0 --port 8090
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

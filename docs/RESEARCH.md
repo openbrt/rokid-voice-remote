@@ -13,10 +13,12 @@ verified before installation.
   allocates its word array from the current count. The matching closed R2
   detector also allocates per-word state dynamically and contains no fixed
   maximum comparison in the inspected setter.
-- This does not mean the practical count is unlimited. Every additional phrase
-  consumes memory and detector time and may hurt false-accept/false-reject
-  rates. This project therefore enforces **32 command phrases** as a
-  conservative, project-owned safety limit pending stress testing.
+- This does not mean the practical count is unlimited. On the inspected 224 MB
+  A113 device, the detector child used about 98 MB with 4 custom phrases,
+  125 MB with 5, and 144 MB with 6. Seven custom phrases triggered the kernel
+  OOM killer; nine also failed repeatedly. The project therefore installs
+  **4 phrases by default** and enforces **5 phrases maximum**, leaving roughly
+  47 MB of working headroom for pairing and configuration activity.
 
 The factory baseline trigger configuration contains two defaults (`若琪|洛奇`
 and `没事了`). Those are separate from the project command list.

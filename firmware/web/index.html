@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rokid Voice Remote</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">ROKID · OFFLINE CONTROL</p>
+      <h1>语音遥控器</h1>
+      <p class="subtitle">配置语音指令、蓝牙目标和遥控键值。保存后离线识别会自动重载。</p>
+    </div>
+    <div class="top-actions">
+      <span id="connection" class="status pending">正在连接</span>
+      <button id="reload" class="secondary" type="button">重新载入</button>
+      <button id="save" class="primary" type="button">保存并应用</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="notice">
+      <strong>电源键说明</strong>
+      <span>HID Power 是切换键。“打开”和“关掉”映射到它时无法判断设备当前状态。</span>
+    </section>
+
+    <section class="panel">
+      <div class="section-heading">
+        <div>
+          <p class="section-index">01</p>
+          <h2>蓝牙目标</h2>
+          <p>先在电视或投影的蓝牙页面配对 <b>Rokid Voice Remote</b>，再选择检测到的设备。</p>
+        </div>
+        <button id="add-target" class="secondary" type="button">添加目标</button>
+      </div>
+      <div id="targets" class="target-list"></div>
+    </section>
+
+    <section class="panel commands-panel">
+      <div class="section-heading">
+        <div>
+          <p class="section-index">02</p>
+          <h2>语音指令与按键映射</h2>
+          <p>最多 5 条。拼音使用带声调数字格式，例如 <code>da3kai1dian4shi4</code>。</p>
+        </div>
+        <div class="heading-actions">
+          <span id="command-count" class="counter">0 / 5</span>
+          <button id="add-command" class="secondary" type="button">添加指令</button>
+        </div>
+      </div>
+      <div class="command-table">
+        <div class="command-head">
+          <span>语音指令</span><span>拼音</span><span>目标</span><span>遥控按键</span>
+          <span>类型 / 键值</span><span>次数</span><span></span>
+        </div>
+        <div id="commands"></div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <dialog id="auth-dialog">
+    <form id="auth-form" method="dialog">
+      <p class="eyebrow">CONFIGURATION TOKEN</p>
+      <h2>输入配置令牌</h2>
+      <p>令牌由安装程序输出，也保存在音箱的 <code>config/web-token</code>。</p>
+      <label>
+        <span>配置令牌</span>
+        <input id="token-input" type="password" autocomplete="current-password" required>
+      </label>
+      <button class="primary full" type="submit">连接音箱</button>
+    </form>
+  </dialog>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>

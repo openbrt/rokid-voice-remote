@@ -31,6 +31,7 @@ btflinger.service
 "
 
 PROJECT_UNITS="
+rokid-voice-remote-config.service
 rokid-voice-remote-hid.service
 rokid-voice-remote-voice.service
 "

@@ -38,6 +38,7 @@ btflinger.service
 "
 
 PROJECT_UNITS="
+rokid-voice-remote-config.service
 rokid-voice-remote-hid.service
 rokid-voice-remote-voice.service
 "
@@ -90,8 +91,6 @@ trap rollback_install EXIT INT TERM HUP
 [ "$ROOT" = "$EXPECTED_ROOT" ] || fail "unsafe DEVICE_ROOT: $ROOT"
 [ "$RUN" = "$EXPECTED_RUN" ] || fail "unsafe RUN_ROOT: $RUN"
 [ "$(uname -m)" = aarch64 ] || fail "unsupported architecture: $(uname -m)"
-[ ! -e /data/rokid-chatgpt ] || \
-    fail "/data/rokid-chatgpt exists; uninstall it explicitly before installing this independent profile"
 [ ! -e "$ROOT/state/original-state-v1" ] || \
     fail "an installation already exists; uninstall it before reinstalling"
 
@@ -101,6 +100,7 @@ for file in \
     /usr/bin/prepare-pulseaudio \
     /usr/lib/libbsa.so \
     /usr/lua/lib/rokidsiren.so \
+    "$PACKAGE/bin/voice_remote_config" \
     "$PACKAGE/bin/voice_remote_hid" \
     "$PACKAGE/MANIFEST.sha256"; do
     [ -e "$file" ] || fail "missing required component: $file"
@@ -116,6 +116,23 @@ case "$bsa_hash" in
     *) fail "unsupported factory libbsa.so: $bsa_hash" ;;
 esac
 
+if [ -e /data/rokid-chatgpt ]; then
+    if [ "${ROKID_VOICE_REMOTE_REPLACE_CONFLICT:-0}" != 1 ]; then
+        fail "/data/rokid-chatgpt exists; use the explicit replacement option"
+    fi
+    conflict_uninstaller=
+    if [ -x /data/rokid-chatgpt/uninstall.sh ]; then
+        conflict_uninstaller=/data/rokid-chatgpt/uninstall.sh
+    elif [ -x /data/rokid-chatgpt/bin/uninstall.sh ]; then
+        conflict_uninstaller=/data/rokid-chatgpt/bin/uninstall.sh
+    fi
+    [ -n "$conflict_uninstaller" ] || \
+        fail "conflicting profile has no recoverable uninstall script"
+    echo "REPLACING_CONFLICT /data/rokid-chatgpt"
+    "$conflict_uninstaller" || fail "conflicting profile uninstall failed"
+    [ ! -e /data/rokid-chatgpt ] || fail "conflicting profile was not removed"
+fi
+
 siren_hash=$(sha256sum /usr/lua/lib/rokidsiren.so | awk '{print $1}')
 case "$siren_hash" in
     a3377d10dd39a973af55740baf3d74dd26069bcd230b94582e7460f1260828af|\
@@ -127,7 +144,7 @@ for unit in $PROJECT_UNITS; do
     systemctl stop "$unit" >/dev/null 2>&1 || true
 done
 
-mkdir -p "$ROOT/bin" "$ROOT/config" "$ROOT/lua" "$STATE" "$RUN"
+mkdir -p "$ROOT/bin" "$ROOT/config" "$ROOT/lua" "$ROOT/web" "$STATE" "$RUN"
 
 : > "$STATE/original-enabled"
 : > "$STATE/original-active"
@@ -143,6 +160,7 @@ echo 1 > "$STATE/original-state-v1"
 STATE_CAPTURED=1
 
 cp "$PACKAGE/bin/voice_remote_hid" "$ROOT/bin/voice_remote_hid"
+cp "$PACKAGE/bin/voice_remote_config" "$ROOT/bin/voice_remote_config"
 cp "$PACKAGE/bin/voice-listener.sh" "$ROOT/bin/voice-listener.sh"
 cp "$PACKAGE/bin/dispatch.sh" "$ROOT/bin/dispatch.sh"
 cp "$PACKAGE/bin/doctor.sh" "$ROOT/bin/doctor.sh"
@@ -151,6 +169,8 @@ cp "$PACKAGE/uninstall.sh" "$ROOT/uninstall.sh"
 cp "$PACKAGE/project.env" "$ROOT/project.env"
 rm -rf "$ROOT/lua/voice"
 cp -R "$PACKAGE/lua/voice" "$ROOT/lua/voice"
+rm -rf "$ROOT/web"
+cp -R "$PACKAGE/web" "$ROOT/web"
 
 if [ ! -e "$ROOT/config/commands.tsv" ]; then
     cp "$PACKAGE/config/commands.tsv" "$ROOT/config/commands.tsv"
@@ -158,12 +178,24 @@ fi
 if [ ! -e "$ROOT/config/targets.conf" ]; then
     cp "$PACKAGE/config/targets.conf.example" "$ROOT/config/targets.conf"
 fi
+if [ ! -s "$ROOT/config/web-token" ]; then
+    umask 077
+    od -An -tx1 -N24 /dev/urandom | tr -d ' \n' > "$ROOT/config/.web-token.tmp"
+    [ "$(wc -c < "$ROOT/config/.web-token.tmp")" -eq 48 ] || \
+        fail "configuration token generation failed"
+    mv "$ROOT/config/.web-token.tmp" "$ROOT/config/web-token"
+fi
+umask 022
 
-chmod 0755 "$ROOT/bin/voice_remote_hid" "$ROOT/bin/voice-listener.sh" \
+chmod 0755 "$ROOT/bin/voice_remote_hid" "$ROOT/bin/voice_remote_config" \
+    "$ROOT/bin/voice-listener.sh" \
     "$ROOT/bin/dispatch.sh" "$ROOT/bin/doctor.sh" \
     "$ROOT/bin/paired-devices.sh" "$ROOT/uninstall.sh"
 chmod 0644 "$ROOT/config/commands.tsv" "$ROOT/config/targets.conf" \
-    "$ROOT/lua/voice/main.lua" "$ROOT/project.env"
+    "$ROOT/lua/voice/main.lua" "$ROOT/project.env" "$ROOT/web/"*
+chmod 0600 "$ROOT/config/web-token"
+chmod 0755 "$ROOT" "$ROOT/bin" "$ROOT/lua" "$ROOT/web" "$STATE" "$RUN"
+chmod 0700 "$ROOT/config"
 
 for unit in $VENDOR_UNITS; do
     systemctl stop "$unit" >/dev/null 2>&1 || true
@@ -176,6 +208,7 @@ done
 
 for unit in $PROJECT_UNITS; do
     cp "$PACKAGE/systemd/$unit" "$SYSTEMD/$unit"
+    chmod 0644 "$SYSTEMD/$unit"
 done
 systemctl daemon-reload
 for unit in $PROJECT_UNITS; do
@@ -189,4 +222,11 @@ sleep 2
 INSTALL_COMPLETE=1
 trap - EXIT INT TERM HUP
 echo "INSTALL_OK root=$ROOT"
-echo "Next: pair 'Rokid Voice Remote', then edit $ROOT/config/targets.conf"
+device_ip=$(ip address show 2>/dev/null | awk '/inet / && $2 !~ /^127\./ { sub("/.*", "", $2); print $2; exit }')
+config_token=$(sed -n '1p' "$ROOT/config/web-token")
+if [ -n "$device_ip" ]; then
+    echo "CONFIG_URL http://$device_ip:$CONFIG_PORT/#$config_token"
+else
+    echo "CONFIG_PAGE port=$CONFIG_PORT token=$config_token"
+fi
+echo "Next: pair 'Rokid Voice Remote', then open the configuration page"
