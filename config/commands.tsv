@@ -1,0 +1,10 @@
+# phrase<TAB>pinyin<TAB>target<TAB>kind<TAB>code<TAB>repeat
+打开投影	da3kai1tou2ying3	projector	consumer	0x0030	1
+关掉投影	guan1diao4tou2ying3	projector	consumer	0x0030	1
+打开电视	da3kai1dian4shi4	television	consumer	0x0030	1
+关掉电视	guan1diao4dian4shi4	television	consumer	0x0030	1
+电视声音大一点	dian4shi4sheng1yin1da4yi1dian3	television	consumer	0x00e9	1
+电视声音小一点	dian4shi4sheng1yin1xiao3yi1dian3	television	consumer	0x00ea	1
+电视静音	dian4shi4jing4yin1	television	consumer	0x00e2	1
+电视播放暂停	dian4shi4bo1fang4zan4ting2	television	consumer	0x00cd	1
+电视主页	dian4shi4zhu3ye4	television	consumer	0x0223	1

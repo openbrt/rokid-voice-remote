@@ -1,0 +1,4 @@
+# target<TAB>Bluetooth BD_ADDR
+# 在电视/投影的蓝牙设置中完成配对后，把地址填在这里。
+television	00:00:00:00:00:00
+projector	00:00:00:00:00:00

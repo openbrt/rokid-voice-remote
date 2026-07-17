@@ -1,0 +1,17 @@
+[Unit]
+Description=Rokid Voice Remote Offline Phrase Listener
+After=rokid-voice-remote-hid.service pulseaudio.service btflinger.service
+Requires=rokid-voice-remote-hid.service
+Conflicts=activation.service rokid-chatgpt-offline.service
+
+[Service]
+Type=simple
+Environment=ROKID_VOICE_REMOTE_ROOT=/data/rokid-voice-remote
+ExecStartPre=/usr/bin/prepare-bsiren
+ExecStartPre=/usr/bin/prepare-pulseaudio
+ExecStart=/data/rokid-voice-remote/bin/voice-listener.sh
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

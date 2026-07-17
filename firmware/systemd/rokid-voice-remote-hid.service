@@ -1,0 +1,15 @@
+[Unit]
+Description=Rokid Voice Remote Bluetooth HID Device
+After=bsa_server.service net_manager.service
+Requires=bsa_server.service
+Conflicts=activation.service rokid-chatgpt.service
+
+[Service]
+Type=simple
+ExecStartPre=/bin/mkdir -p /run/rokid-voice-remote
+ExecStart=/data/rokid-voice-remote/bin/voice_remote_hid daemon --socket /run/rokid-voice-remote/hidd.sock --uipc /data/bluetooth/ --name "Rokid Voice Remote"
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
