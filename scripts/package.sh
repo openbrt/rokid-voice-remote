@@ -9,8 +9,10 @@ ARCHIVE=$PROJECT/dist/rokid-voice-remote-$VERSION.tar.gz
 [ -x "$BINARY" ] || { echo "missing build/voice_remote_hid; run scripts/build-on-sdk.sh" >&2; exit 1; }
 mkdir -p "$PROJECT/dist"
 stage=$(mktemp -d "$PROJECT/dist/.stage.XXXXXX")
+manifest_files=$(mktemp "$PROJECT/dist/.manifest-files.XXXXXX")
 cleanup() {
     rm -rf "$stage"
+    rm -f "$manifest_files"
 }
 trap cleanup EXIT INT TERM HUP
 
@@ -35,12 +37,10 @@ chmod 0644 "$stage/config/"* "$stage/lua/voice/main.lua" \
 
 (
     cd "$stage"
-    find . -type f ! -name MANIFEST.sha256 ! -name .manifest-files |
-        LC_ALL=C sort > .manifest-files
+    find . -type f ! -name MANIFEST.sha256 | LC_ALL=C sort > "$manifest_files"
     while IFS= read -r file; do
         shasum -a 256 "$file"
-    done < .manifest-files > MANIFEST.sha256
-    rm -f .manifest-files
+    done < "$manifest_files" > MANIFEST.sha256
 )
 
 rm -f "$ARCHIVE"

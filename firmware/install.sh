@@ -2,7 +2,8 @@
 set -eu
 
 PACKAGE=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
-# shellcheck disable=SC1091 -- project.env is beside install.sh in the package.
+# project.env is beside install.sh in the assembled device package.
+# shellcheck disable=SC1091
 . "$PACKAGE/project.env"
 
 ROOT=$DEVICE_ROOT

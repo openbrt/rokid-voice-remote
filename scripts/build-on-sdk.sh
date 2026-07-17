@@ -19,14 +19,16 @@ remote_tmp=$(ssh "$HOST" 'mktemp -d /tmp/rokid-voice-remote.XXXXXX')
 case "$remote_tmp" in /tmp/rokid-voice-remote.*) ;; *) echo "unsafe remote temp: $remote_tmp" >&2; exit 2 ;; esac
 
 cleanup() {
-    # shellcheck disable=SC2029 -- remote_tmp is prefix-validated above.
+    # remote_tmp is prefix-validated above before client-side expansion.
+    # shellcheck disable=SC2029
     ssh "$HOST" "rm -rf -- '$remote_tmp'" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT INT TERM HUP
 
 scp "$PROJECT/src/voice_remote_hid.c" "$HOST:$remote_tmp/voice_remote_hid.c" >/dev/null
 
-# shellcheck disable=SC2029 -- every interpolated path is validated or constant.
+# Every client-expanded path below is validated or constant.
+# shellcheck disable=SC2029
 ssh "$HOST" "'$CC' -std=c11 -O2 -Wall -Wextra -fstack-protector-strong -D_FORTIFY_SOURCE=2 -I'$INCLUDE' '$remote_tmp/voice_remote_hid.c' -L'$LIBRARY' -Wl,-z,relro,-z,now -lbsa -lpthread -o '$remote_tmp/voice_remote_hid' && '$STRIP' --strip-unneeded '$remote_tmp/voice_remote_hid' && '$READELF' -h '$remote_tmp/voice_remote_hid' | grep -E 'Class:|Machine:|Type:'"
 
 mkdir -p "$PROJECT/build"
