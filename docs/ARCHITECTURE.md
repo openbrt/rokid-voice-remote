@@ -22,12 +22,14 @@ Bluetooth Classic HID (keyboard / consumer control)
 TV, projector, or a central receiver
 ```
 
-配置面是第三个独立服务：
+配置面是第三个独立服务，可由在线安装页经 USB 或由可信局域网直接访问：
 
 ```text
-browser on trusted LAN
-      |
-HTTP :8090 + X-Config-Token
+GitHub Pages installer              browser on trusted LAN
+      | WebUSB ADB tcp:8090                  |
+      +----------------------+---------------+
+                             |
+                  HTTP :8090 + X-Config-Token
       |
 voice_remote_config
       | validate all rows, ranges and duplicates
@@ -35,6 +37,11 @@ atomic replacement of commands.tsv + targets.conf
       |
 restart voice listener
 ```
+
+首次 Wi-Fi 配置不经过 LAN HTTP。在线安装页通过 WebUSB ADB 调用设备现有的
+`wpa_cli` 控制面；SSID 以 UTF-8 十六进制传递，WPA/WPA2 密码在浏览器内用
+PBKDF2-SHA1 派生为 256 位 PSK 后再发送。页面不会把明文密码写入设备命令行或
+安装日志，也不直接编辑 `wpa_supplicant.conf`。
 
 静态页面不依赖 CDN。配置令牌由安装器从 `/dev/urandom` 生成，权限为 `0600`，
 通过 URL fragment 导入浏览器的 session storage；fragment 不会随 HTTP 请求发送。

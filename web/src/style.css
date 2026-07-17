@@ -76,6 +76,51 @@ code { color: #cbdcff; }
 .console-title { display: flex; justify-content: space-between; padding: 10px 13px; border-bottom: 1px solid #283247; color: #8490a6; font-size: 11px; font-weight: 750; letter-spacing: .05em; }
 pre { min-height: 154px; max-height: 340px; overflow: auto; margin: 0; padding: 15px; color: #acc5fb; font: 12px/1.68 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
 
+.device-setup { margin-top: 22px; border: 1px solid #283249; border-radius: 25px; background: rgba(14, 19, 31, .94); box-shadow: 0 30px 100px rgba(0,0,0,.28); overflow: hidden; }
+.device-setup-header { display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; padding: 30px 32px; border-bottom: 1px solid #252e42; }
+.device-setup-header > div > p:last-child { max-width: 680px; margin: 10px 0 0; color: #98a5ba; font-size: 13px; line-height: 1.6; }
+.config-status { display: inline-flex; align-items: center; min-height: 30px; padding: 7px 10px; border: 1px solid #3b465d; border-radius: 999px; color: #9aa6ba; font: 700 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: nowrap; }
+.config-status.ok { color: #aaf0c5; border-color: #32664a; background: #10271c; }
+.config-status.error { color: #ffaaa3; border-color: #793d3d; background: #2d1719; }
+.config-status.limit { color: #ffd48a; border-color: #715826; }
+
+.config-panel { margin: 22px 32px; padding: 22px; border: 1px solid #29344b; border-radius: 18px; background: linear-gradient(145deg, #111827, #0e1420); }
+.config-section-heading { display: flex; justify-content: space-between; gap: 24px; align-items: center; margin-bottom: 20px; }
+.section-index { margin: 0 0 8px; color: #7faaff; font: 800 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .15em; }
+.config-section-heading h3 { margin: 0; font-size: 21px; letter-spacing: -.025em; }
+.config-section-heading p:not(.section-index) { margin: 8px 0 0; color: #909cb1; font-size: 13px; line-height: 1.55; }
+.config-heading-actions, .config-footer-actions, .wifi-status-line { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.config-footer-actions { justify-content: flex-end; margin-top: 20px; }
+.muted, .inline-help { color: #8793a8; font-size: 12px; }
+
+.wifi-panel { border-color: #30456d; background: linear-gradient(145deg, #111c31, #0e1522); }
+.wifi-status-line { min-height: 32px; margin-bottom: 14px; }
+.wifi-form { display: grid; grid-template-columns: minmax(11rem, 1.25fr) minmax(11rem, 1.1fr) minmax(10rem, .85fr) minmax(10rem, 1fr) auto; gap: 10px; align-items: end; }
+.inline-help { margin: 12px 0 0; line-height: 1.55; }
+
+.device-setup label { display: grid; gap: 6px; color: #8f9aae; font-size: 11px; }
+.device-setup input, .device-setup select { width: 100%; min-height: 42px; padding: 10px 11px; color: #edf2fc; border: 1px solid #303a4f; border-radius: 9px; outline: none; background: #090e17; font: inherit; }
+.device-setup input:focus, .device-setup select:focus { border-color: #78a5ff; box-shadow: 0 0 0 3px rgba(120,165,255,.1); }
+.device-setup input:disabled { opacity: .45; }
+.target-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 10px; }
+.target-card { display: grid; grid-template-columns: minmax(7rem, .7fr) minmax(12rem, 1.3fr) auto; gap: 9px; align-items: end; padding: 14px; border: 1px solid #2c374d; border-radius: 14px; background: #0c121e; }
+.config-danger { min-height: 42px; padding: 9px 11px; color: #ff9a9f; border: 1px solid #593039; border-radius: 9px; background: #241419; cursor: pointer; }
+.config-danger.compact { font-size: 18px; }
+
+.power-note { display: flex; gap: 12px; margin-bottom: 15px; padding: 12px 14px; color: #ffd48a; border: 1px solid #5b4824; border-radius: 11px; background: rgba(255,202,102,.055); font-size: 12px; line-height: 1.55; }
+.power-note span { color: #c9bb9b; }
+.command-table { overflow-x: auto; }
+.command-head, .command-row { display: grid; grid-template-columns: minmax(9rem, 1.25fr) minmax(11rem, 1.5fr) minmax(8rem, .8fr) minmax(11rem, 1fr) minmax(12rem, 1fr) 5rem 3rem; gap: 8px; min-width: 1050px; align-items: center; }
+.command-head { padding: 0 10px 8px; color: #7f8ca1; font-size: 10px; }
+.command-row { padding: 10px; border-top: 1px solid #29344a; }
+.command-row.power { background: rgba(255,202,102,.035); }
+.code-group { display: grid; grid-template-columns: .8fr 1.2fr; gap: 6px; }
+code { padding: 2px 5px; border: 1px solid #303a4f; border-radius: 5px; color: #c9d8f7; background: #090e17; }
+
+.config-toast { position: fixed; right: 20px; bottom: 20px; z-index: 30; max-width: min(430px, calc(100vw - 40px)); padding: 13px 16px; color: #aaf0c5; border: 1px solid #32664a; border-radius: 12px; background: #10271c; opacity: 0; transform: translateY(10px); pointer-events: none; transition: .2s ease; }
+.config-toast.show { opacity: 1; transform: translateY(0); }
+.config-toast.error { color: #ffaaa3; border-color: #793d3d; background: #2d1719; }
+
 .aftercare { margin-top: 22px; padding: 30px 32px; box-shadow: none; }
 .after-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 24px; }
 .after-grid article { min-height: 150px; padding: 20px; border: 1px solid #29344c; border-radius: 16px; background: #101725; }
@@ -98,6 +143,12 @@ footer a { color: #9db9ef; text-decoration: none; }
   .consent { margin: 0 20px 20px; }
   .actions { padding: 0 20px 22px; }
   .console-wrap { margin: 0 20px 20px; }
+  .device-setup-header { padding: 24px 20px; }
+  .config-panel { margin: 18px 20px; padding: 17px; }
+  .config-section-heading { align-items: flex-start; flex-direction: column; }
+  .wifi-form { grid-template-columns: 1fr 1fr; }
+  .wifi-form .button { min-height: 42px; }
+  .target-card { grid-template-columns: 1fr; }
   .aftercare { padding: 24px 20px; }
   .after-grid { grid-template-columns: 1fr; }
   footer { flex-direction: column; }
@@ -110,4 +161,7 @@ footer a { color: #9db9ef; text-decoration: none; }
   .step:last-child { border-bottom: 0; }
   .notice { grid-template-columns: 1fr; }
   .actions .button { flex: 1 1 44%; text-align: center; }
+  .device-setup-header { flex-direction: column; }
+  .wifi-form { grid-template-columns: 1fr; }
+  .power-note { flex-direction: column; }
 }

@@ -1,4 +1,4 @@
-import { Adb, AdbDaemonTransport } from "@yume-chan/adb";
+import { Adb, AdbDaemonTransport, escapeArg } from "@yume-chan/adb";
 import AdbWebCredentialStore from "@yume-chan/adb-credential-web";
 import { AdbDaemonWebUsbDeviceManager } from "@yume-chan/adb-daemon-webusb";
 import {
@@ -6,6 +6,12 @@ import {
   ReadableStream,
   TextDecoderStream,
 } from "@yume-chan/stream-extra";
+import {
+  loadConfigurator,
+  showConfigToast,
+  type DeviceRequestOptions,
+} from "./configurator";
+import { loadWifi } from "./wifi";
 import "./style.css";
 
 type Release = {
@@ -19,6 +25,7 @@ const runtimeFiles = [
   "/usr/lib/libbsa.so",
   "/usr/lua/lib/rokidsiren.so",
 ] as const;
+const rokidUsbFilters = [{ vendorId: 0x18d1, productId: 0x4e26 }] as const;
 
 const runtimeVariants = [
   {
@@ -55,6 +62,8 @@ let adb: Adb | undefined;
 let verified = false;
 let installed = false;
 let release: Release | undefined;
+let deviceToken = "";
+let grantedRokidDevices: Awaited<ReturnType<AdbDaemonWebUsbDeviceManager["getDevices"]>> = [];
 
 function log(message: string) {
   const timestamp = new Date().toLocaleTimeString("zh-CN", { hour12: false });
@@ -86,11 +95,78 @@ async function run(command: string | readonly string[]) {
   if (!adb) throw new Error("ADB 尚未连接");
   // The 2018 Buildroot adbd accepts the original shell service but rejects the
   // newer exec service. State-changing commands use explicit success markers.
+  if (Array.isArray(command)) command = command.map(escapeArg).join(" ");
   const process = await adb.subprocess.noneProtocol.pty(command);
   const output = await process.output
     .pipeThrough(new TextDecoderStream())
     .pipeThrough(new ConcatStringStream());
   return output.replace(/\r\n/g, "\n");
+}
+
+function parseHttpResponse(raw: string) {
+  const separator = raw.indexOf("\r\n\r\n");
+  if (separator < 0) throw new Error("音箱配置服务返回了无效响应");
+  const head = raw.slice(0, separator);
+  const body = raw.slice(separator + 4);
+  const status = head.match(/^HTTP\/1\.1\s+(\d{3})\s+/)?.[1];
+  if (!status) throw new Error("音箱配置服务缺少 HTTP 状态");
+  const statusCode = Number(status);
+  if (statusCode < 200 || statusCode >= 300) {
+    throw new Error(body.trim() || `音箱配置服务 HTTP ${statusCode}`);
+  }
+  return body;
+}
+
+async function deviceRequest(path: string, options: DeviceRequestOptions = {}) {
+  if (!adb || !deviceToken) throw new Error("USB 配置通道尚未连接");
+  if (!["/api/commands", "/api/targets", "/api/paired", "/api/status", "/api/config"]
+    .includes(path)) {
+    throw new Error("不允许的设备配置路径");
+  }
+  const method = options.method || "GET";
+  const bodyBytes = new TextEncoder().encode(options.body || "");
+  const headers = [
+    `${method} ${path} HTTP/1.1`,
+    "Host: 127.0.0.1:8090",
+    `X-Config-Token: ${deviceToken}`,
+    "Connection: close",
+  ];
+  if (method === "POST") {
+    headers.push(`Content-Type: ${options.contentType || "application/octet-stream"}`);
+    headers.push(`Content-Length: ${bodyBytes.byteLength}`);
+  }
+  const requestBytes = new TextEncoder().encode(`${headers.join("\r\n")}\r\n\r\n${options.body || ""}`);
+  const socket = await adb.createSocket("tcp:8090");
+  try {
+    const writer = socket.writable.getWriter();
+    await writer.write(requestBytes);
+    writer.releaseLock();
+    const response = await socket.readable
+      .pipeThrough(new TextDecoderStream())
+      .pipeThrough(new ConcatStringStream());
+    return parseHttpResponse(response);
+  } finally {
+    await Promise.resolve(socket.close()).catch(() => undefined);
+  }
+}
+
+async function activateDeviceSetup() {
+  await run(["systemctl", "start", "rokid-voice-remote-config.service"]);
+  deviceToken = (await run([
+    "sed", "-n", "1p", "/data/rokid-voice-remote/config/web-token",
+  ])).trim();
+  if (!/^[0-9a-f]{48}$/.test(deviceToken)) {
+    throw new Error("音箱配置令牌缺失或格式无效");
+  }
+  await loadConfigurator(deviceRequest);
+  try {
+    await loadWifi(run);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    showConfigToast(`Wi‑Fi 状态读取失败：${message}`, true);
+  }
+  setStep("configure");
+  $("device-setup").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 async function digestHex(data: ArrayBuffer) {
@@ -128,7 +204,9 @@ async function connect() {
     const manager = AdbDaemonWebUsbDeviceManager.BROWSER;
     if (!manager) throw new Error("当前浏览器不支持 WebUSB");
 
-    const device = await manager.requestDevice();
+    const device = grantedRokidDevices.length === 1
+      ? grantedRokidDevices[0]
+      : await manager.requestDevice({ filters: rokidUsbFilters });
     if (!device) throw new Error("未选择 USB ADB 设备");
 
     log(`已选择 USB 设备：${device.name || "ADB device"}`);
@@ -174,7 +252,13 @@ async function verify() {
       + "else echo __CLEAN__; fi",
     );
     if (profileState.includes("__VOICE_REMOTE_INSTALLED__")) {
-      throw new Error("本项目已经安装；请使用固件配置页，或先卸载再升级");
+      installed = true;
+      verified = true;
+      buttons.verify.textContent = "配置已载入";
+      log("检测到已安装的 Rokid Voice Remote，正在通过 USB 读取配置");
+      await activateDeviceSetup();
+      setStatus("可以配网和配置");
+      return;
     }
     if (profileState.includes("__OTHER_PROFILE__")) {
       throw new Error("检测到占用相同服务的其他固件；请使用仓库中的命令行迁移工具先做本地备份");
@@ -266,13 +350,13 @@ async function install() {
     if (configUrl) {
       configLink.href = configUrl;
       configLink.classList.remove("hidden");
-      log("固件配置页入口已生成");
+      log("音箱局域网维护页入口已生成");
     } else {
-      log("音箱未取得局域网地址；可用命令行安装工具建立 ADB 端口转发。");
+      log("音箱尚未取得局域网地址，仍可直接在本页通过 USB 配置。");
     }
-    log("安装完成。下一步：配对目标设备，然后配置语音和 HID 键值。");
-    setStatus("安装成功");
-    setStep("configure");
+    log("安装完成，正在读取配网、语音与遥控键值配置。");
+    await activateDeviceSetup();
+    setStatus("安装成功，可以配置");
   } catch (error) {
     log(`安装失败：${error instanceof Error ? error.message : String(error)}`);
     setStatus("安装失败");
@@ -285,6 +369,9 @@ const manager = AdbDaemonWebUsbDeviceManager.BROWSER;
 if (manager && window.isSecureContext) {
   browserPill.textContent = "WebUSB 可用";
   browserPill.classList.add("ok");
+  manager.getDevices({ filters: rokidUsbFilters })
+    .then((devices) => { grantedRokidDevices = devices; })
+    .catch(() => { grantedRokidDevices = []; });
 } else {
   browserPill.textContent = "WebUSB 不可用";
   browserPill.classList.add("error");
@@ -296,4 +383,46 @@ consent.addEventListener("change", () => setBusy(false));
 buttons.connect.addEventListener("click", connect);
 buttons.verify.addEventListener("click", verify);
 buttons.install.addEventListener("click", install);
+window.addEventListener("rokid-wifi-connected", (event) => {
+  const ip = (event as CustomEvent<{ ip?: string }>).detail?.ip;
+  if (!ip || !deviceToken) return;
+  configLink.href = `http://${ip}:8090/#${encodeURIComponent(deviceToken)}`;
+  configLink.classList.remove("hidden");
+});
 setBusy(false);
+
+if (import.meta.env.DEV
+    && new URLSearchParams(window.location.search).get("preview") === "device") {
+  const mockRequest = async (path: string) => {
+    if (path === "/api/commands") {
+      return "打开投影\tda3kai1tou2ying3\tprojector\tconsumer\t0x0030\t1\n"
+        + "关掉投影\tguan1diao4tou2ying3\tprojector\tconsumer\t0x0030\t1\n"
+        + "打开电视\tda3kai1dian4shi4\ttelevision\tconsumer\t0x0030\t1\n"
+        + "关掉电视\tguan1diao4dian4shi4\ttelevision\tconsumer\t0x0030\t1\n";
+    }
+    if (path === "/api/targets") {
+      return "projector\t00:00:00:00:00:00\ntelevision\t00:00:00:00:00:00\n";
+    }
+    if (path === "/api/paired") {
+      return "34:12:98:AA:10:01\t客厅电视\n48:20:77:BB:20:02\t投影仪\n";
+    }
+    return "OK saved commands=4 targets=2; voice listener restarting\n";
+  };
+  const mockShell = async (command: readonly string[]) => {
+    if (command.includes("status")) {
+      return "wpa_state=COMPLETED\nssid=Home-WiFi\nid=0\nip_address=192.168.8.237\n";
+    }
+    if (command.includes("scan_results")) {
+      return "bssid / frequency / signal level / flags / ssid\n"
+        + "00:11:22:33:44:55\t2412\t-42\t[WPA2-PSK-CCMP][ESS]\tHome-WiFi\n";
+    }
+    if (command.includes("add_network")) return "1\n";
+    return "OK\n";
+  };
+  loadConfigurator(mockRequest)
+    .then(() => loadWifi(mockShell))
+    .then(() => {
+      setStep("configure");
+      $("device-setup").scrollIntoView({ block: "start" });
+    });
+}

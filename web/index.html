@@ -16,7 +16,7 @@
         <div class="eyebrow">LOCAL VOICE · BLUETOOTH HID · A113</div>
         <h1>说一句，<br /><span>按键就到了。</span></h1>
         <p class="lede">
-          把 Rokid 音箱变成离线语音遥控器。自定义指令、目标设备和遥控键值都在固件配置页完成。
+          把 Rokid 音箱变成离线语音遥控器。安装、配网、自定义指令、目标设备和遥控键值都在当前页面完成。
         </p>
         <div class="traits" aria-label="项目特性">
           <span>全程本地识别</span><span>USB 在线安装</span><span>最多 5 条指令</span>
@@ -70,7 +70,7 @@
           <button id="connect" class="button primary">连接 Rokid</button>
           <button id="verify" class="button" disabled>验证设备</button>
           <button id="install" class="button" disabled>安装固件</button>
-          <a id="config-link" class="button success hidden" target="_blank" rel="noreferrer">打开配置页</a>
+          <a id="config-link" class="button hidden" target="_blank" rel="noreferrer">打开音箱维护页</a>
         </div>
 
         <div class="console-wrap">
@@ -81,6 +81,100 @@
         </div>
       </section>
 
+      <section id="device-setup" class="device-setup hidden" aria-labelledby="device-setup-title">
+        <div class="device-setup-header">
+          <div>
+            <p class="kicker">USB DEVICE SETUP</p>
+            <h2 id="device-setup-title">配网与遥控配置</h2>
+            <p>下面的操作都通过当前 USB ADB 会话直达音箱，不要求音箱预先联网。</p>
+          </div>
+          <span id="config-connection" class="config-status pending">正在读取</span>
+        </div>
+
+        <section class="config-panel wifi-panel" aria-labelledby="wifi-title">
+          <div class="config-section-heading">
+            <div>
+              <p class="section-index">01 · NETWORK</p>
+              <h3 id="wifi-title">连接 Wi‑Fi</h3>
+              <p>支持手动输入或扫描附近网络。密码只在浏览器本地用于派生 WPA PSK。</p>
+            </div>
+            <button id="wifi-refresh" class="button" type="button">扫描网络</button>
+          </div>
+          <div class="wifi-status-line">
+            <span id="wifi-state" class="config-status pending">正在读取网络状态</span>
+            <span id="wifi-address" class="muted"></span>
+          </div>
+          <div class="wifi-form">
+            <label>
+              <span>扫描结果</span>
+              <select id="wifi-network">
+                <option value="">手动输入网络</option>
+              </select>
+            </label>
+            <label>
+              <span>Wi‑Fi 名称（SSID）</span>
+              <input id="wifi-ssid" type="text" maxlength="32" autocomplete="off" placeholder="家庭 Wi‑Fi">
+            </label>
+            <label>
+              <span>安全类型</span>
+              <select id="wifi-security">
+                <option value="wpa-psk">WPA / WPA2 Personal</option>
+                <option value="open">开放网络</option>
+              </select>
+            </label>
+            <label>
+              <span>密码</span>
+              <input id="wifi-password" type="password" autocomplete="new-password" placeholder="8–63 字节">
+            </label>
+            <button id="wifi-connect" class="button primary" type="button">连接并保存</button>
+          </div>
+          <p class="inline-help">旧款 A113 运行时不支持需要网页认证的酒店/校园网络；优先使用 WPA/WPA2 Personal。</p>
+        </section>
+
+        <section class="config-panel" aria-labelledby="targets-title">
+          <div class="config-section-heading">
+            <div>
+              <p class="section-index">02 · TARGETS</p>
+              <h3 id="targets-title">蓝牙目标</h3>
+              <p>先让电视、投影或中控与 <b>Rokid Voice Remote</b> 完成配对，再从列表选择。</p>
+            </div>
+            <button id="config-add-target" class="button" type="button">添加目标</button>
+          </div>
+          <div id="config-targets" class="target-list"></div>
+        </section>
+
+        <section class="config-panel" aria-labelledby="commands-title">
+          <div class="config-section-heading">
+            <div>
+              <p class="section-index">03 · COMMANDS</p>
+              <h3 id="commands-title">语音指令与遥控键值</h3>
+              <p>最多 5 条；拼音使用声调数字，例如 <code>da3kai1dian4shi4</code>。</p>
+            </div>
+            <div class="config-heading-actions">
+              <span id="config-command-count" class="config-status">0 / 5</span>
+              <button id="config-add-command" class="button" type="button">添加指令</button>
+            </div>
+          </div>
+          <div class="power-note">
+            <strong>电源键是切换键</strong>
+            <span>“打开”和“关掉”映射到 HID Power 时，无法判断目标当前状态。</span>
+          </div>
+          <div class="command-table">
+            <div class="command-head">
+              <span>语音指令</span><span>拼音</span><span>目标</span><span>遥控按键</span>
+              <span>类型 / 键值</span><span>次数</span><span></span>
+            </div>
+            <div id="config-commands"></div>
+          </div>
+          <div class="config-footer-actions">
+            <button id="config-reload" class="button" type="button">重新读取</button>
+            <button id="config-save" class="button success" type="button">保存并应用</button>
+          </div>
+        </section>
+      </section>
+
+      <div id="config-toast" class="config-toast" role="status" aria-live="polite"></div>
+
       <section class="aftercare" aria-labelledby="aftercare-title">
         <div>
           <p class="kicker">AFTER INSTALL</p>
@@ -88,7 +182,7 @@
         </div>
         <div class="after-grid">
           <article><span>1</span><strong>配对</strong><p>在电视、投影或中控的蓝牙页面搜索 Rokid Voice Remote。</p></article>
-          <article><span>2</span><strong>映射</strong><p>打开固件配置页，选择目标并配置语音指令与遥控键值。</p></article>
+          <article><span>2</span><strong>映射</strong><p>保持 USB 连接，直接在本页选择目标并配置语音指令与遥控键值。</p></article>
           <article><span>3</span><strong>说话</strong><p>说出“打开投影”等本地指令，音箱发送对应 Bluetooth HID 按键。</p></article>
         </div>
       </section>
