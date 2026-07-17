@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-PROJECT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+PROJECT=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 SERIAL=${ADB_SERIAL:-}
 PACKAGE=
 REMOTE=/data/local/tmp/rokid-voice-remote-install

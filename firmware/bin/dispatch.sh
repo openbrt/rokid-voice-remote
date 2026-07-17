@@ -26,6 +26,7 @@ found=0
 while IFS="$TAB" read -r row_phrase row_pinyin row_target row_kind row_code row_repeat extra; do
     case "$row_phrase" in ''|'#'*) continue ;; esac
     [ -z "${extra:-}" ] || fail "commands.tsv has more than 6 columns"
+    [ -n "$row_pinyin" ] || fail "commands.tsv has empty pinyin"
     if [ "$row_phrase" = "$phrase" ]; then
         [ "$found" -eq 0 ] || fail "duplicate phrase: $phrase"
         found=1
@@ -41,7 +42,9 @@ case "$target" in *[!A-Za-z0-9_.-]*|'') fail "invalid target: $target" ;; esac
 case "$kind" in consumer|key) ;; *) fail "invalid kind: $kind" ;; esac
 case "$code" in 0[xX][0-9A-Fa-f]*|[0-9]*) ;; *) fail "invalid code: $code" ;; esac
 case "$repeat" in ''|*[!0-9]*) fail "invalid repeat: $repeat" ;; esac
-[ "$repeat" -ge 1 ] && [ "$repeat" -le 10 ] || fail "repeat must be 1..10"
+if [ "$repeat" -lt 1 ] || [ "$repeat" -gt 10 ]; then
+    fail "repeat must be 1..10"
+fi
 
 mkdir -p "$RUN"
 if ! mkdir "$RUN/dispatch.lock" 2>/dev/null; then

@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-PROJECT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+PROJECT=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 VERSION=$(sed -n '1p' "$PROJECT/VERSION")
 BINARY=$PROJECT/build/voice_remote_hid
 ARCHIVE=$PROJECT/dist/rokid-voice-remote-$VERSION.tar.gz
@@ -35,10 +35,12 @@ chmod 0644 "$stage/config/"* "$stage/lua/voice/main.lua" \
 
 (
     cd "$stage"
-    find . -type f ! -name MANIFEST.sha256 | LC_ALL=C sort |
+    find . -type f ! -name MANIFEST.sha256 ! -name .manifest-files |
+        LC_ALL=C sort > .manifest-files
     while IFS= read -r file; do
         shasum -a 256 "$file"
-    done > MANIFEST.sha256
+    done < .manifest-files > MANIFEST.sha256
+    rm -f .manifest-files
 )
 
 rm -f "$ARCHIVE"

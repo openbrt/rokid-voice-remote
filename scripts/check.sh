@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-PROJECT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+PROJECT=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 COMMANDS=$PROJECT/config/commands.tsv
 
 find "$PROJECT/firmware" "$PROJECT/scripts" "$PROJECT/tools" -type f -name '*.sh' |

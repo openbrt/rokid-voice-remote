@@ -1,7 +1,8 @@
 #!/bin/sh
 set -eu
 
-PACKAGE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+PACKAGE=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+# shellcheck disable=SC1091 -- project.env is beside install.sh in the package.
 . "$PACKAGE/project.env"
 
 ROOT=$DEVICE_ROOT

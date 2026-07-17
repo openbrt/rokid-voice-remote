@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-PROJECT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+PROJECT=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 TEST_ROOT=$(mktemp -d)
 cleanup() {
     rm -rf "$TEST_ROOT"
