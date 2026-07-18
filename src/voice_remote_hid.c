@@ -145,6 +145,103 @@ static void management_callback(tBSA_MGT_EVT event, tBSA_MGT_MSG *message)
     pthread_mutex_unlock(&g_state_lock);
 }
 
+static void security_callback(tBSA_SEC_EVT event, tBSA_SEC_MSG *message)
+{
+    char address[18] = "unknown";
+    tBSA_STATUS status;
+
+    if (message == NULL) {
+        log_line("error", "Bluetooth security event=%d without data", event);
+        return;
+    }
+
+    switch (event) {
+    case BSA_SEC_LINK_UP_EVT:
+        format_addr(message->link_up.bd_addr, address);
+        log_line("info", "Bluetooth link up address=%s", address);
+        break;
+    case BSA_SEC_LINK_DOWN_EVT:
+        format_addr(message->link_down.bd_addr, address);
+        log_line("info", "Bluetooth link down address=%s reason=%u", address,
+                 message->link_down.status);
+        break;
+    case BSA_SEC_PIN_REQ_EVT: {
+        tBSA_SEC_PIN_CODE_REPLY reply;
+
+        format_addr(message->pin_req.bd_addr, address);
+        BSA_SecPinCodeReplyInit(&reply);
+        memcpy(reply.bd_addr, message->pin_req.bd_addr, sizeof(BD_ADDR));
+        memcpy(reply.pin_code, "0000", 4);
+        reply.pin_len = 4;
+        status = BSA_SecPinCodeReply(&reply);
+        log_line(status == BSA_SUCCESS ? "info" : "error",
+                 "legacy PIN reply address=%s status=%d", address, status);
+        break;
+    }
+    case BSA_SEC_SP_CFM_REQ_EVT: {
+        tBSA_SEC_SP_CFM_REPLY reply;
+
+        format_addr(message->cfm_req.bd_addr, address);
+        BSA_SecSpCfmReplyInit(&reply);
+        memcpy(reply.bd_addr, message->cfm_req.bd_addr, sizeof(BD_ADDR));
+        reply.accept = TRUE;
+        reply.is_ble = message->cfm_req.is_ble;
+        status = BSA_SecSpCfmReply(&reply);
+        log_line(status == BSA_SUCCESS ? "info" : "error",
+                 "SSP confirmation address=%s just_works=%d status=%d",
+                 address, message->cfm_req.just_works ? 1 : 0, status);
+        break;
+    }
+    case BSA_SEC_AUTH_CMPL_EVT:
+        format_addr(message->auth_cmpl.bd_addr, address);
+        log_line(message->auth_cmpl.success ? "info" : "error",
+                 "Bluetooth authentication address=%s success=%d reason=%u key=%d",
+                 address, message->auth_cmpl.success ? 1 : 0,
+                 message->auth_cmpl.fail_reason,
+                 message->auth_cmpl.key_present ? 1 : 0);
+        break;
+    case BSA_SEC_AUTHORIZE_EVT: {
+        tBSA_SEC_AUTH_REPLY reply;
+
+        format_addr(message->authorize.bd_addr, address);
+        BSA_SecAuthorizeReplyInit(&reply);
+        memcpy(reply.bd_addr, message->authorize.bd_addr, sizeof(BD_ADDR));
+        reply.trusted_service = message->authorize.service;
+        reply.auth = BSA_SEC_AUTH_PERM;
+        status = BSA_SecAuthorizeReply(&reply);
+        log_line(status == BSA_SUCCESS ? "info" : "error",
+                 "Bluetooth authorization address=%s service=%u status=%d",
+                 address, message->authorize.service, status);
+        break;
+    }
+    case BSA_SEC_UNKNOWN_LINKKEY_EVT:
+        format_addr(message->lost_link_key.bd_addr, address);
+        log_line("error", "Bluetooth peer lost link key address=%s", address);
+        break;
+    default:
+        log_line("info", "Bluetooth security event=%d", event);
+        break;
+    }
+}
+
+static int configure_security(void)
+{
+    tBSA_SEC_SET_SECURITY parameters;
+    tBSA_STATUS status;
+
+    BSA_SecSetSecurityInit(&parameters);
+    parameters.simple_pairing_io_cap = BSA_SEC_IO_CAP_NONE;
+    parameters.sec_cback = security_callback;
+    parameters.ssp_debug = FALSE;
+    status = BSA_SecSetSecurity(&parameters);
+    if (status != BSA_SUCCESS) {
+        log_line("error", "BSA_SecSetSecurity failed status=%d", status);
+        return -1;
+    }
+    log_line("info", "Bluetooth security ready (headless Just Works)");
+    return 0;
+}
+
 static void hd_callback(tBSA_HD_EVT event, tBSA_HD_MSG *message)
 {
     char address[18] = "unknown";
@@ -287,7 +384,7 @@ static int enable_hid(const BD_ADDR address)
     tBSA_STATUS status;
 
     BSA_HdEnableInit(&parameters);
-    parameters.sec_mask = BSA_SEC_NONE;
+    parameters.sec_mask = BSA_SEC_AUTHENTICATION | BSA_SEC_ENCRYPTION;
     memcpy(parameters.bd_addr, address, sizeof(BD_ADDR));
     parameters.p_cback = hd_callback;
     status = BSA_HdEnable(&parameters);
@@ -355,7 +452,7 @@ static int connect_target(const BD_ADDR address)
         return -1;
     }
     BSA_HdOpenInit(&open_parameters);
-    open_parameters.sec_mask = BSA_SEC_NONE;
+    open_parameters.sec_mask = BSA_SEC_AUTHENTICATION | BSA_SEC_ENCRYPTION;
     status = BSA_HdOpen(&open_parameters);
     if (status != BSA_SUCCESS) {
         log_line("error", "BSA_HdOpen failed status=%d", status);
@@ -708,7 +805,8 @@ static int run_daemon(int argc, char **argv)
     sigaction(SIGTERM, &action, NULL);
     signal(SIGPIPE, SIG_IGN);
 
-    if (open_management(uipc_path) != 0 || set_local_config(name) != 0 ||
+    if (open_management(uipc_path) != 0 || configure_security() != 0 ||
+        set_local_config(name) != 0 ||
         listen_for_host() != 0) {
         close_management();
         return 1;

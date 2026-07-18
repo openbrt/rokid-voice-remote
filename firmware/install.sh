@@ -229,4 +229,4 @@ if [ -n "$device_ip" ]; then
 else
     echo "CONFIG_PAGE port=$CONFIG_PORT token=$config_token"
 fi
-echo "Next: pair 'Rokid Voice Remote', then open the configuration page"
+echo "Next: learn remote keys over USB, then pair 'Rokid Voice Remote' on the TV/projector"

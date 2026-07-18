@@ -50,7 +50,7 @@ cp "$PROJECT/config/targets.conf.example" "$TEST_ROOT/new-targets.conf"
 curl -fsS -H "X-Config-Token: $TOKEN" \
     --data-urlencode "commands@$TEST_ROOT/new-commands.tsv" \
     --data-urlencode "targets@$TEST_ROOT/new-targets.conf" \
-    "http://127.0.0.1:$PORT/api/config" | grep -q '^OK saved commands=4 targets=2'
+    "http://127.0.0.1:$PORT/api/config" | grep -q '^OK saved commands=4 targets=0'
 
 awk '!changed && /0x0030/ { sub(/0x0030/, "0xffff"); changed=1 } { print }' \
     "$PROJECT/config/commands.tsv" > "$TEST_ROOT/invalid.tsv"
@@ -64,8 +64,8 @@ grep -q 'invalid key data' "$TEST_ROOT/error.txt"
 
 cp "$PROJECT/config/commands.tsv" "$TEST_ROOT/overflow.tsv"
 printf '%b\n' \
-    '测试第五条\tce4shi4di4wu3tiao2\ttelevision\tconsumer\t0x00e2\t1' \
-    '测试第六条\tce4shi4di4liu4tiao2\ttelevision\tconsumer\t0x00cd\t1' \
+    '测试第五条\tce4shi4di4wu3tiao2\tactive\tconsumer\t0x00e2\t1' \
+    '测试第六条\tce4shi4di4liu4tiao2\tactive\tconsumer\t0x00cd\t1' \
     >> "$TEST_ROOT/overflow.tsv"
 status=$(curl -sS -o "$TEST_ROOT/overflow-error.txt" -w '%{http_code}' \
     -H "X-Config-Token: $TOKEN" \

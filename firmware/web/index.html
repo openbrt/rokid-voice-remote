@@ -11,7 +11,7 @@
     <div>
       <p class="eyebrow">ROKID · OFFLINE CONTROL</p>
       <h1>语音遥控器</h1>
-      <p class="subtitle">配置语音指令、蓝牙目标和遥控键值。保存后离线识别会自动重载。</p>
+      <p class="subtitle">用于拔掉 USB 后的可选维护。普通配对和语音遥控不需要访问本页。</p>
     </div>
     <div class="top-actions">
       <span id="connection" class="status pending">正在连接</span>
@@ -26,22 +26,23 @@
       <span>HID Power 是切换键。“打开”和“关掉”映射到它时无法判断设备当前状态。</span>
     </section>
 
-    <section class="panel">
+    <details class="panel optional-panel">
+      <summary>高级：按蓝牙地址切换多个主机</summary>
       <div class="section-heading">
         <div>
-          <p class="section-index">01</p>
-          <h2>蓝牙目标</h2>
-          <p>先在电视或投影的蓝牙页面配对 <b>Rokid Voice Remote</b>，再选择检测到的设备。</p>
+          <p class="section-index">ADVANCED</p>
+          <h2>命名蓝牙主机</h2>
+          <p>普通用法不需要这项：指令默认直接发给当前已连接的电视或投影。</p>
         </div>
         <button id="add-target" class="secondary" type="button">添加目标</button>
       </div>
       <div id="targets" class="target-list"></div>
-    </section>
+    </details>
 
     <section class="panel commands-panel">
       <div class="section-heading">
         <div>
-          <p class="section-index">02</p>
+          <p class="section-index">01</p>
           <h2>语音指令与按键映射</h2>
           <p>最多 5 条。拼音使用带声调数字格式，例如 <code>da3kai1dian4shi4</code>。</p>
         </div>

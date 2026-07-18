@@ -1,5 +1,5 @@
 # phrase<TAB>pinyin<TAB>target<TAB>kind<TAB>code<TAB>repeat
-打开投影	da3kai1tou2ying3	projector	consumer	0x0030	1
-关掉投影	guan1diao4tou2ying3	projector	consumer	0x0030	1
-打开电视	da3kai1dian4shi4	television	consumer	0x0030	1
-关掉电视	guan1diao4dian4shi4	television	consumer	0x0030	1
+打开投影	da3kai1tou2ying3	active	consumer	0x0030	1
+关掉投影	guan1diao4tou2ying3	active	consumer	0x0030	1
+打开电视	da3kai1dian4shi4	active	consumer	0x0030	1
+关掉电视	guan1diao4dian4shi4	active	consumer	0x0030	1

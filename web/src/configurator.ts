@@ -178,8 +178,8 @@ function renderLearningTargets() {
   }
   if ([...elements.learnTarget.options].some((item) => item.value === selected)) {
     elements.learnTarget.value = selected;
-  } else if (state.targets[0]) {
-    elements.learnTarget.value = state.targets[0].name;
+  } else {
+    elements.learnTarget.value = "active";
   }
 }
 
@@ -198,7 +198,7 @@ function setLearningStatus(message: string, type: "idle" | "listening" | "ok" | 
 
 function setLearningArmed(value: boolean) {
   learningArmed = value;
-  elements.learnArm.textContent = value ? "取消等待" : "③ 等待并记录按键";
+  elements.learnArm.textContent = value ? "取消等待" : "② 等待并记录按键";
   elements.learnArm.classList.toggle("listening", value);
   if (value) {
     elements.learnResult.textContent = "请按一下原遥控器上要学习的按键…";
@@ -492,7 +492,7 @@ elements.addCommand.addEventListener("click", () => {
   state.commands.push({
     phrase: "",
     pinyin: "",
-    target: state.targets[0]?.name || "active",
+    target: "active",
     kind: "consumer",
     code: "0x0030",
     repeat: 1,
