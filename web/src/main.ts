@@ -119,7 +119,10 @@ function parseHttpResponse(raw: string) {
 
 async function deviceRequest(path: string, options: DeviceRequestOptions = {}) {
   if (!adb || !deviceToken) throw new Error("USB 配置通道尚未连接");
-  if (!["/api/commands", "/api/targets", "/api/paired", "/api/status", "/api/config"]
+  if (![
+    "/api/commands", "/api/targets", "/api/paired", "/api/status",
+    "/api/config", "/api/hid/listen",
+  ]
     .includes(path)) {
     throw new Error("不允许的设备配置路径");
   }

@@ -41,6 +41,16 @@ status=$(curl -sS -o /dev/null -w '%{http_code}' \
     "http://127.0.0.1:$PORT/api/status")
 [ "$status" = 401 ] || { echo "unauthorized API status=$status" >&2; exit 1; }
 
+status=$(curl -sS -o /dev/null -w '%{http_code}' -X POST -d '' \
+    "http://127.0.0.1:$PORT/api/hid/listen")
+[ "$status" = 401 ] || { echo "unauthorized HID listen status=$status" >&2; exit 1; }
+
+status=$(curl -sS -o "$TEST_ROOT/listen-error.txt" -w '%{http_code}' \
+    -X POST -d '' -H "X-Config-Token: $TOKEN" \
+    "http://127.0.0.1:$PORT/api/hid/listen")
+[ "$status" = 503 ] || { echo "missing HID socket status=$status" >&2; exit 1; }
+grep -q 'cannot enter Bluetooth pairing mode' "$TEST_ROOT/listen-error.txt"
+
 curl -fsS -H "X-Config-Token: $TOKEN" \
     "http://127.0.0.1:$PORT/api/commands" > "$TEST_ROOT/received.tsv"
 cmp "$TEST_ROOT/config/commands.tsv" "$TEST_ROOT/received.tsv"

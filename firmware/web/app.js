@@ -27,7 +27,8 @@ const elements = {
   toast: document.querySelector('#toast'),
   authDialog: document.querySelector('#auth-dialog'),
   authForm: document.querySelector('#auth-form'),
-  tokenInput: document.querySelector('#token-input')
+  tokenInput: document.querySelector('#token-input'),
+  pairingMode: document.querySelector('#pairing-mode')
 };
 
 function initialToken() {
@@ -293,6 +294,19 @@ async function saveConfiguration() {
   }
 }
 
+async function enterPairingMode() {
+  if (!window.confirm('这会断开当前电视/投影。确定要让音箱进入新增设备配对模式吗？')) return;
+  elements.pairingMode.disabled = true;
+  try {
+    await api('/api/hid/listen', { method: 'POST' });
+    showToast('已进入配对模式；现在请在目标设备屏幕上添加 Rokid Voice Remote');
+  } catch (error) {
+    showToast(error.message, true);
+  } finally {
+    elements.pairingMode.disabled = false;
+  }
+}
+
 document.querySelector('#add-target').addEventListener('click', () => {
   let index = state.targets.length + 1;
   while (state.targets.some((target) => target.name === `device${index}`)) index += 1;
@@ -300,6 +314,7 @@ document.querySelector('#add-target').addEventListener('click', () => {
   renderTargets();
   renderCommands();
 });
+elements.pairingMode.addEventListener('click', enterPairingMode);
 
 document.querySelector('#add-command').addEventListener('click', () => {
   if (state.commands.length >= MAX_COMMANDS) return;

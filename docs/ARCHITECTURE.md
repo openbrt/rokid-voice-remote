@@ -96,6 +96,12 @@ from the BSA callback thread). If that attempt fails, the daemon returns to
 listen mode rather than retrying indefinitely. Virtual-cable unplug never
 reconnects.
 
+The authenticated configuration service exposes `POST /api/hid/listen` for
+multi-host onboarding. It forwards only the fixed `listen` command over the
+local HID Unix socket; no caller-supplied shell command or Bluetooth address is
+accepted. Entering this mode disconnects the active host and clears automatic
+reconnect so another TV can pair through its own on-screen Bluetooth UI.
+
 ## Trust boundaries
 
 Phrase lookup is exact. TSV values are never sourced or evaluated. Target
