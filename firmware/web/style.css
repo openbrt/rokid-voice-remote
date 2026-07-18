@@ -161,18 +161,6 @@ code { padding: .15rem .35rem; border: 1px solid var(--line); border-radius: 5px
 .toast.show { opacity: 1; transform: translateY(0); }
 .toast.error { color: var(--danger); border-color: #61313a; background: #291319; }
 
-dialog {
-  width: min(28rem, calc(100vw - 2rem));
-  padding: 1.5rem;
-  color: var(--text);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--panel);
-}
-dialog::backdrop { background: rgba(0, 0, 0, .78); backdrop-filter: blur(6px); }
-dialog h2 { margin-bottom: .5rem; }
-dialog p:not(.eyebrow) { color: var(--muted); }
-
 @media (max-width: 850px) {
   .topbar, .section-heading { align-items: flex-start; flex-direction: column; }
   .top-actions { width: 100%; }

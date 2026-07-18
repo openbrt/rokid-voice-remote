@@ -30,7 +30,6 @@ check_file "$ROOT/bin/voice_remote_hid"
 check_file "$ROOT/bin/voice_remote_config"
 check_file "$ROOT/config/commands.tsv"
 check_file "$ROOT/config/targets.conf"
-check_file "$ROOT/config/web-token"
 check_file "$ROOT/web/index.html"
 
 check_unit bsa_server.service

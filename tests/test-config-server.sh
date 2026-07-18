@@ -5,7 +5,6 @@ PROJECT=$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)
 BINARY=$PROJECT/build/voice_remote_config-host
 TEST_ROOT=$(mktemp -d)
 PORT=$((20000 + ($$ % 20000)))
-TOKEN=0123456789abcdef0123456789abcdef0123456789abcdef
 SERVER_PID=
 
 cleanup() {
@@ -19,7 +18,6 @@ mkdir -p "$TEST_ROOT/config" "$TEST_ROOT/web"
 cp "$PROJECT/config/commands.tsv" "$TEST_ROOT/config/commands.tsv"
 cp "$PROJECT/config/targets.conf.example" "$TEST_ROOT/config/targets.conf"
 cp "$PROJECT/firmware/web/"* "$TEST_ROOT/web/"
-printf '%s\n' "$TOKEN" > "$TEST_ROOT/config/web-token"
 
 "$BINARY" validate "$TEST_ROOT/config/commands.tsv" \
     "$TEST_ROOT/config/targets.conf" >/dev/null
@@ -39,25 +37,20 @@ done
 
 status=$(curl -sS -o /dev/null -w '%{http_code}' \
     "http://127.0.0.1:$PORT/api/status")
-[ "$status" = 401 ] || { echo "unauthorized API status=$status" >&2; exit 1; }
-
-status=$(curl -sS -o /dev/null -w '%{http_code}' -X POST -d '' \
-    "http://127.0.0.1:$PORT/api/hid/listen")
-[ "$status" = 401 ] || { echo "unauthorized HID listen status=$status" >&2; exit 1; }
+[ "$status" = 200 ] || { echo "API status=$status" >&2; exit 1; }
 
 status=$(curl -sS -o "$TEST_ROOT/listen-error.txt" -w '%{http_code}' \
-    -X POST -d '' -H "X-Config-Token: $TOKEN" \
+    -X POST -d '' \
     "http://127.0.0.1:$PORT/api/hid/listen")
 [ "$status" = 503 ] || { echo "missing HID socket status=$status" >&2; exit 1; }
 grep -q 'cannot enter Bluetooth pairing mode' "$TEST_ROOT/listen-error.txt"
 
-curl -fsS -H "X-Config-Token: $TOKEN" \
-    "http://127.0.0.1:$PORT/api/commands" > "$TEST_ROOT/received.tsv"
+curl -fsS "http://127.0.0.1:$PORT/api/commands" > "$TEST_ROOT/received.tsv"
 cmp "$TEST_ROOT/config/commands.tsv" "$TEST_ROOT/received.tsv"
 
 cp "$PROJECT/config/commands.tsv" "$TEST_ROOT/new-commands.tsv"
 cp "$PROJECT/config/targets.conf.example" "$TEST_ROOT/new-targets.conf"
-curl -fsS -H "X-Config-Token: $TOKEN" \
+curl -fsS \
     --data-urlencode "commands@$TEST_ROOT/new-commands.tsv" \
     --data-urlencode "targets@$TEST_ROOT/new-targets.conf" \
     "http://127.0.0.1:$PORT/api/config" | grep -q '^OK saved commands=4 targets=0'
@@ -65,7 +58,6 @@ curl -fsS -H "X-Config-Token: $TOKEN" \
 awk '!changed && /0x0030/ { sub(/0x0030/, "0xffff"); changed=1 } { print }' \
     "$PROJECT/config/commands.tsv" > "$TEST_ROOT/invalid.tsv"
 status=$(curl -sS -o "$TEST_ROOT/error.txt" -w '%{http_code}' \
-    -H "X-Config-Token: $TOKEN" \
     --data-urlencode "commands@$TEST_ROOT/invalid.tsv" \
     --data-urlencode "targets@$TEST_ROOT/new-targets.conf" \
     "http://127.0.0.1:$PORT/api/config")
@@ -78,7 +70,6 @@ printf '%b\n' \
     '测试第六条\tce4shi4di4liu4tiao2\tactive\tconsumer\t0x00cd\t1' \
     >> "$TEST_ROOT/overflow.tsv"
 status=$(curl -sS -o "$TEST_ROOT/overflow-error.txt" -w '%{http_code}' \
-    -H "X-Config-Token: $TOKEN" \
     --data-urlencode "commands@$TEST_ROOT/overflow.tsv" \
     --data-urlencode "targets@$TEST_ROOT/new-targets.conf" \
     "http://127.0.0.1:$PORT/api/config")

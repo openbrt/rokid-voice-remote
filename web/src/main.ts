@@ -62,7 +62,6 @@ let adb: Adb | undefined;
 let verified = false;
 let installed = false;
 let release: Release | undefined;
-let deviceToken = "";
 let grantedRokidDevices: Awaited<ReturnType<AdbDaemonWebUsbDeviceManager["getDevices"]>> = [];
 
 function log(message: string) {
@@ -118,7 +117,7 @@ function parseHttpResponse(raw: string) {
 }
 
 async function deviceRequest(path: string, options: DeviceRequestOptions = {}) {
-  if (!adb || !deviceToken) throw new Error("USB 配置通道尚未连接");
+  if (!adb) throw new Error("USB 配置通道尚未连接");
   if (![
     "/api/commands", "/api/targets", "/api/paired", "/api/status",
     "/api/config", "/api/hid/listen",
@@ -131,7 +130,6 @@ async function deviceRequest(path: string, options: DeviceRequestOptions = {}) {
   const headers = [
     `${method} ${path} HTTP/1.1`,
     "Host: 127.0.0.1:8090",
-    `X-Config-Token: ${deviceToken}`,
     "Connection: close",
   ];
   if (method === "POST") {
@@ -155,12 +153,6 @@ async function deviceRequest(path: string, options: DeviceRequestOptions = {}) {
 
 async function activateDeviceSetup() {
   await run(["systemctl", "start", "rokid-voice-remote-config.service"]);
-  deviceToken = (await run([
-    "sed", "-n", "1p", "/data/rokid-voice-remote/config/web-token",
-  ])).trim();
-  if (!/^[0-9a-f]{48}$/.test(deviceToken)) {
-    throw new Error("音箱配置令牌缺失或格式无效");
-  }
   await loadConfigurator(deviceRequest);
   try {
     await loadWifi(run);
@@ -388,8 +380,8 @@ buttons.verify.addEventListener("click", verify);
 buttons.install.addEventListener("click", install);
 window.addEventListener("rokid-wifi-connected", (event) => {
   const ip = (event as CustomEvent<{ ip?: string }>).detail?.ip;
-  if (!ip || !deviceToken) return;
-  configLink.href = `http://${ip}:8090/#${encodeURIComponent(deviceToken)}`;
+  if (!ip) return;
+  configLink.href = `http://${ip}:8090/`;
   configLink.classList.remove("hidden");
 });
 setBusy(false);

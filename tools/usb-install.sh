@@ -58,15 +58,14 @@ adb_cmd push "$PACKAGE" "$REMOTE/package.tar.gz"
 adb_cmd shell "gzip -dc '$REMOTE/package.tar.gz' | tar -C '$REMOTE' -xf -"
 adb_cmd shell "ROKID_VOICE_REMOTE_REPLACE_CONFLICT=$REPLACE sh '$REMOTE/install.sh'"
 adb_cmd shell rm -rf "$REMOTE"
-token=$(adb_cmd shell sed -n 1p /data/rokid-voice-remote/config/web-token | tr -d '\r\n')
 device_ip=$(adb_cmd shell ip address show | tr -d '\r' | \
     awk '/inet / && $2 !~ /^127\./ { sub("/.*", "", $2); print $2; exit }')
 forward_port=$(adb_cmd forward tcp:0 tcp:8090 2>/dev/null || true)
 case "$forward_port" in ''|*[!0-9]*) forward_port= ;; esac
-if [ -n "$forward_port" ] && [ -n "$token" ]; then
-    config_url=http://127.0.0.1:$forward_port/#$token
-elif [ -n "$device_ip" ] && [ -n "$token" ]; then
-    config_url=http://$device_ip:8090/#$token
+if [ -n "$forward_port" ]; then
+    config_url=http://127.0.0.1:$forward_port/
+elif [ -n "$device_ip" ]; then
+    config_url=http://$device_ip:8090/
 else
     config_url=
 fi
