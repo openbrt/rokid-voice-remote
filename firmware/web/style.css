@@ -95,6 +95,8 @@ main { width: min(1500px, 94vw); margin: 0 auto; padding: 1.5rem 0 5rem; }
   border-radius: var(--radius);
   background: linear-gradient(145deg, var(--panel), #101318);
 }
+.optional-panel > summary { cursor: pointer; color: #c9d3dd; font-weight: 750; list-style-position: inside; }
+.optional-panel[open] > summary { margin-bottom: 1.25rem; }
 .section-heading { display: flex; justify-content: space-between; gap: 1.5rem; align-items: center; margin-bottom: 1.25rem; }
 .section-heading p:not(.section-index) { margin: .4rem 0 0; }
 

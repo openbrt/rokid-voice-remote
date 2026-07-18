@@ -395,13 +395,13 @@ if (import.meta.env.DEV
     && new URLSearchParams(window.location.search).get("preview") === "device") {
   const mockRequest = async (path: string) => {
     if (path === "/api/commands") {
-      return "打开投影\tda3kai1tou2ying3\tprojector\tconsumer\t0x0030\t1\n"
-        + "关掉投影\tguan1diao4tou2ying3\tprojector\tconsumer\t0x0030\t1\n"
-        + "打开电视\tda3kai1dian4shi4\ttelevision\tconsumer\t0x0030\t1\n"
-        + "关掉电视\tguan1diao4dian4shi4\ttelevision\tconsumer\t0x0030\t1\n";
+      return "打开投影\tda3kai1tou2ying3\tactive\tconsumer\t0x0030\t1\n"
+        + "关掉投影\tguan1diao4tou2ying3\tactive\tconsumer\t0x0030\t1\n"
+        + "打开电视\tda3kai1dian4shi4\tactive\tconsumer\t0x0030\t1\n"
+        + "关掉电视\tguan1diao4dian4shi4\tactive\tconsumer\t0x0030\t1\n";
     }
     if (path === "/api/targets") {
-      return "projector\t00:00:00:00:00:00\ntelevision\t00:00:00:00:00:00\n";
+      return "# 默认使用 active，无需绑定目标\n";
     }
     if (path === "/api/paired") {
       return "34:12:98:AA:10:01\t客厅电视\n48:20:77:BB:20:02\t投影仪\n";

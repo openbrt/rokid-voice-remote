@@ -16,7 +16,7 @@
         <div class="eyebrow">LOCAL VOICE · BLUETOOTH HID · A113</div>
         <h1>说一句，<br /><span>按键就到了。</span></h1>
         <p class="lede">
-          把 Rokid 音箱变成离线语音遥控器。安装、配网、自定义指令都在当前页面完成；把原遥控器带到电脑边按一下，不用再查 HID 键值。
+          把 Rokid 音箱变成离线语音遥控器。在当前页面安装固件，把原遥控器带到电脑边按一下，一次建立语音与 HID 键值映射。
         </p>
         <div class="traits" aria-label="项目特性">
           <span>全程本地识别</span><span>USB 在线安装</span><span>最多 5 条指令</span>
@@ -47,7 +47,7 @@
           </li>
           <li id="step-configure" class="step">
             <span class="number">04</span>
-            <div><strong>配置与配对</strong><small>设置指令、设备和 HID 键值</small></div>
+            <div><strong>学习遥控</strong><small>设置语音指令与 HID 键值</small></div>
           </li>
         </ol>
 
@@ -85,16 +85,17 @@
         <div class="device-setup-header">
           <div>
             <p class="kicker">USB DEVICE SETUP</p>
-            <h2 id="device-setup-title">配网与遥控配置</h2>
-            <p>下面的操作都通过当前 USB ADB 会话直达音箱，不要求音箱预先联网。</p>
+            <h2 id="device-setup-title">遥控学习与配置</h2>
+            <p>语音和键值在电脑边一次学习完成。之后把音箱放到电视/投影旁，在它们的屏幕上配对，无需再回到本页。</p>
           </div>
           <span id="config-connection" class="config-status pending">正在读取</span>
         </div>
 
-        <section class="config-panel wifi-panel" aria-labelledby="wifi-title">
+        <details class="config-panel wifi-panel optional-panel">
+          <summary>可选：连接 Wi‑Fi（仅用于拔掉 USB 后的内置页维护）</summary>
           <div class="config-section-heading">
             <div>
-              <p class="section-index">01 · NETWORK</p>
+              <p class="section-index">OPTIONAL · NETWORK</p>
               <h3 id="wifi-title">连接 Wi‑Fi</h3>
               <p>支持手动输入或扫描附近网络。密码只在浏览器本地用于派生 WPA PSK。</p>
             </div>
@@ -129,24 +130,25 @@
             <button id="wifi-connect" class="button primary" type="button">连接并保存</button>
           </div>
           <p class="inline-help">旧款 A113 运行时不支持需要网页认证的酒店/校园网络；优先使用 WPA/WPA2 Personal。</p>
-        </section>
+        </details>
 
-        <section class="config-panel" aria-labelledby="targets-title">
+        <details class="config-panel optional-panel">
+          <summary>高级：按蓝牙地址切换多个主机</summary>
           <div class="config-section-heading">
             <div>
-              <p class="section-index">02 · TARGETS</p>
-              <h3 id="targets-title">蓝牙目标</h3>
-              <p>先让电视、投影或中控与 <b>Rokid Voice Remote</b> 完成配对，再从列表选择。</p>
+              <p class="section-index">ADVANCED · TARGETS</p>
+              <h3>命名蓝牙主机</h3>
+              <p>普通用法不需要这项：指令默认直接发给当前已连接的电视或投影。</p>
             </div>
             <button id="config-add-target" class="button" type="button">添加目标</button>
           </div>
           <div id="config-targets" class="target-list"></div>
-        </section>
+        </details>
 
         <section class="config-panel" aria-labelledby="commands-title">
           <div class="config-section-heading">
             <div>
-              <p class="section-index">03 · COMMANDS</p>
+              <p class="section-index">01 · COMMANDS</p>
               <h3 id="commands-title">语音指令与遥控键值</h3>
               <p>最多 5 条；拼音使用声调数字，例如 <code>da3kai1dian4shi4</code>。</p>
             </div>
@@ -173,11 +175,11 @@
                 <span>① 语音指令</span>
                 <input id="learn-phrase" type="text" maxlength="32" autocomplete="off" placeholder="例如：打开投影">
               </label>
-              <label>
+              <label class="hidden">
                 <span>② 发送目标</span>
                 <select id="learn-target"><option value="active">当前连接</option></select>
               </label>
-              <button id="learn-arm" class="button primary" type="button">③ 等待并记录按键</button>
+              <button id="learn-arm" class="button primary" type="button">② 等待并记录按键</button>
             </div>
             <div class="learning-reader">
               <div>
@@ -213,9 +215,9 @@
           <h2 id="aftercare-title">装好以后</h2>
         </div>
         <div class="after-grid">
-          <article><span>1</span><strong>配对</strong><p>在电视、投影或中控的蓝牙页面搜索 Rokid Voice Remote。</p></article>
-          <article><span>2</span><strong>学习</strong><p>把原遥控器带到电脑边，输入语音指令并按一下按键，页面自动建立映射。</p></article>
-          <article><span>3</span><strong>说话</strong><p>说出“打开投影”等本地指令，音箱发送对应 Bluetooth HID 按键。</p></article>
+          <article><span>1</span><strong>学习</strong><p>在当前页输入语音指令，再按一下带到电脑边的原遥控器。</p></article>
+          <article><span>2</span><strong>移动并配对</strong><p>把音箱放到受控设备旁，在电视/投影屏幕上搜索 Rokid Voice Remote 并配对。</p></article>
+          <article><span>3</span><strong>说话</strong><p>配对成功即可说出本地指令；不需要配网，也不需要再访问音箱。</p></article>
         </div>
       </section>
 

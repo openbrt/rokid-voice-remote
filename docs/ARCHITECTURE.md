@@ -71,9 +71,17 @@ Consumer press is five bytes: report ID `03`, little-endian usage, and a zero
 second slot. Release is five zero-usage bytes with report ID `03`. Keyboard
 keys use BSA's regular-key request with auto-release.
 
-The Bluetooth stack has a single active HID host. Named targets therefore
-select and connect one bonded host before sending. Switching from a TV to a
-projector is not instantaneous.
+The speaker is the headless HID peripheral. It advertises no input/output
+capability, accepts SSP Just Works confirmation, and requires authenticated,
+encrypted links. Legacy hosts receive the compatibility PIN `0000`. Link keys
+remain in the factory BSA device database and are never returned by the
+configuration API.
+
+The Bluetooth stack has a single active HID host. Normal commands use the
+reserved target `active` and go directly to that connected TV/projector, so
+pairing on the target's own screen is the final setup step. Named targets are
+an optional multi-host feature: they select and connect one bonded host before
+sending, and switching from a TV to a projector is not instantaneous.
 
 ## Trust boundaries
 

@@ -304,7 +304,7 @@ document.querySelector('#add-target').addEventListener('click', () => {
 document.querySelector('#add-command').addEventListener('click', () => {
   if (state.commands.length >= MAX_COMMANDS) return;
   state.commands.push({
-    phrase: '', pinyin: '', target: state.targets[0]?.name || 'active',
+    phrase: '', pinyin: '', target: 'active',
     kind: 'consumer', code: '0x0030', repeat: 1
   });
   renderCommands();
