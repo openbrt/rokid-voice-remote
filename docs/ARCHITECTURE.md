@@ -82,3 +82,11 @@ names, addresses, report types, usages, key codes, modifiers, and repeat counts
 are validated before reaching the Unix socket and again inside the daemon.
 The configuration page performs equivalent server-side validation before it
 can replace either TSV file; browser-side checks are only a usability layer.
+
+The WebUSB configurator also has a one-shot remote learning path. Standard
+keyboard events cover ordinary navigation keys, while an explicitly granted
+WebHID device can expose unblocked Consumer Control input reports. The browser
+decodes only Keyboard Page (`0x07`) and Consumer Page (`0x0c`) usages accepted
+by the firmware; vendor-defined usages are never guessed or persisted. The
+captured report stays in browser memory and is reduced to one usage before the
+normal configuration validation path.

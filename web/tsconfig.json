@@ -6,7 +6,7 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
     "moduleResolution": "bundler",
-    "types": ["vite/client"],
+    "types": ["vite/client", "w3c-web-hid"],
     "allowImportingTsExtensions": false,
     "isolatedModules": true,
     "moduleDetection": "force",

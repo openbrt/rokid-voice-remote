@@ -1,3 +1,10 @@
+import { pinyin } from "pinyin-pro";
+import {
+  decodeHidInput,
+  keyboardEventToMapping,
+  type LearnedHidMapping,
+} from "./hid-learning";
+
 export type DeviceRequestOptions = {
   method?: "GET" | "POST";
   contentType?: string;
@@ -62,9 +69,18 @@ const elements = {
   addCommand: element<HTMLButtonElement>("config-add-command"),
   reload: element<HTMLButtonElement>("config-reload"),
   save: element<HTMLButtonElement>("config-save"),
+  learnPhrase: element<HTMLInputElement>("learn-phrase"),
+  learnTarget: element<HTMLSelectElement>("learn-target"),
+  learnArm: element<HTMLButtonElement>("learn-arm"),
+  learnHid: element<HTMLButtonElement>("learn-hid"),
+  learnStatus: element<HTMLElement>("learn-status"),
+  learnDevice: element<HTMLElement>("learn-device"),
+  learnResult: element<HTMLElement>("learn-result"),
 };
 
 let toastTimer: number | undefined;
+let learningArmed = false;
+const learningDevices = new Set<HIDDevice>();
 
 export function showConfigToast(message: string, error = false) {
   elements.toast.textContent = message;
@@ -151,6 +167,126 @@ function renderTargets() {
     card.append(fieldLabel("目标名称", name), fieldLabel("已配对设备", address), remove);
     elements.targets.append(card);
   });
+  renderLearningTargets();
+}
+
+function renderLearningTargets() {
+  const selected = elements.learnTarget.value;
+  elements.learnTarget.replaceChildren(option("active", "当前连接"));
+  for (const target of state.targets) {
+    elements.learnTarget.append(option(target.name, target.name));
+  }
+  if ([...elements.learnTarget.options].some((item) => item.value === selected)) {
+    elements.learnTarget.value = selected;
+  } else if (state.targets[0]) {
+    elements.learnTarget.value = state.targets[0].name;
+  }
+}
+
+function phrasePinyin(phrase: string) {
+  return pinyin(phrase, {
+    toneType: "num",
+    type: "array",
+    nonZh: "consecutive",
+  }).join("").replace(/[^A-Za-z0-9]/g, "");
+}
+
+function setLearningStatus(message: string, type: "idle" | "listening" | "ok" | "error" = "idle") {
+  elements.learnStatus.textContent = message;
+  elements.learnStatus.className = `learn-status ${type}`;
+}
+
+function setLearningArmed(value: boolean) {
+  learningArmed = value;
+  elements.learnArm.textContent = value ? "取消等待" : "③ 等待并记录按键";
+  elements.learnArm.classList.toggle("listening", value);
+  if (value) {
+    elements.learnResult.textContent = "请按一下原遥控器上要学习的按键…";
+    setLearningStatus("正在等待按键", "listening");
+  }
+}
+
+function finishLearning(result: LearnedHidMapping) {
+  if (!learningArmed) return;
+  const phrase = elements.learnPhrase.value.trim();
+  const generatedPinyin = phrasePinyin(phrase);
+  if (!generatedPinyin) {
+    setLearningArmed(false);
+    setLearningStatus("无法生成拼音", "error");
+    return;
+  }
+  state.commands.push({
+    phrase,
+    pinyin: generatedPinyin,
+    target: elements.learnTarget.value,
+    kind: result.kind,
+    code: result.code,
+    repeat: 1,
+  });
+  setLearningArmed(false);
+  elements.learnResult.textContent = `已识别：${result.label} · ${result.kind === "consumer" ? "Consumer" : "Keyboard"} ${result.code}`;
+  elements.learnResult.className = "learn-result learned";
+  setLearningStatus("已加入映射列表", "ok");
+  elements.learnPhrase.value = "";
+  renderCommands();
+  showConfigToast(`已学习“${phrase}” → ${result.label}，保存后生效`);
+}
+
+function handleLearningKey(event: KeyboardEvent) {
+  if (!learningArmed || event.repeat) return;
+  event.preventDefault();
+  event.stopPropagation();
+  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+    setLearningStatus("不支持组合键，请只按一个遥控按键", "error");
+    return;
+  }
+  const result = keyboardEventToMapping(event);
+  if (result) finishLearning(result);
+  else setLearningStatus(`未识别 ${event.code || event.key}，可尝试“选择 HID 遥控器”`, "error");
+}
+
+function handleHidInput(event: HIDInputReportEvent) {
+  if (!learningArmed) return;
+  const result = decodeHidInput(event.device, event);
+  if (result) finishLearning(result);
+}
+
+async function attachLearningDevice(device: HIDDevice) {
+  if (!device.opened) await device.open();
+  if (!learningDevices.has(device)) {
+    device.addEventListener("inputreport", handleHidInput);
+    learningDevices.add(device);
+  }
+  const names = [...learningDevices].map((item) => item.productName || "HID 遥控器");
+  elements.learnDevice.textContent = `HID 已连接：${names.join("、")}`;
+  elements.learnDevice.className = "learn-device connected";
+}
+
+async function chooseLearningDevice() {
+  if (!("hid" in navigator)) {
+    setLearningStatus("当前浏览器不支持 WebHID，请使用桌面版 Chrome 或 Edge", "error");
+    return;
+  }
+  try {
+    const devices = await navigator.hid.requestDevice({ filters: [] });
+    if (!devices.length) return;
+    await Promise.all(devices.map(attachLearningDevice));
+    setLearningStatus("HID 遥控器已连接，可以开始学习", "ok");
+  } catch (error) {
+    setLearningStatus(error instanceof Error ? error.message : String(error), "error");
+  }
+}
+
+async function prepareLearningSupport() {
+  if (!("hid" in navigator)) {
+    elements.learnHid.disabled = true;
+    elements.learnDevice.textContent = "WebHID 不可用；仍可学习系统能识别的普通按键";
+    return;
+  }
+  const devices = await navigator.hid.getDevices();
+  if (devices.length) {
+    elements.learnDevice.textContent = `有 ${devices.length} 个曾授权的 HID 设备；点击右侧按钮后才会连接`;
+  }
 }
 
 function presetFor(command: Command) {
@@ -309,6 +445,7 @@ export async function loadConfigurator(request?: DeviceRequest) {
       .map(([address, name]) => ({ address, name }));
     renderTargets();
     renderCommands();
+    prepareLearningSupport().catch(() => undefined);
     setConnection("USB 已连接", "ok");
   } catch (error) {
     setConnection("读取失败", "error");
@@ -362,6 +499,32 @@ elements.addCommand.addEventListener("click", () => {
   });
   renderCommands();
 });
+
+elements.learnArm.addEventListener("click", () => {
+  if (learningArmed) {
+    setLearningArmed(false);
+    setLearningStatus("已取消", "idle");
+    return;
+  }
+  const phrase = elements.learnPhrase.value.trim();
+  if (!phrase) {
+    setLearningStatus("请先输入要说的语音指令", "error");
+    elements.learnPhrase.focus();
+    return;
+  }
+  if (state.commands.length >= MAX_COMMANDS) {
+    setLearningStatus("已达到 5 条指令上限", "error");
+    return;
+  }
+  if (state.commands.some((command) => command.phrase.trim() === phrase)) {
+    setLearningStatus("这条语音指令已经存在", "error");
+    return;
+  }
+  elements.learnResult.className = "learn-result";
+  setLearningArmed(true);
+});
+elements.learnHid.addEventListener("click", chooseLearningDevice);
+window.addEventListener("keydown", handleLearningKey, true);
 
 elements.reload.addEventListener("click", () => {
   loadConfigurator().catch((error) => {

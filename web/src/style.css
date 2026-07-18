@@ -109,6 +109,24 @@ pre { min-height: 154px; max-height: 340px; overflow: auto; margin: 0; padding: 
 
 .power-note { display: flex; gap: 12px; margin-bottom: 15px; padding: 12px 14px; color: #ffd48a; border: 1px solid #5b4824; border-radius: 11px; background: rgba(255,202,102,.055); font-size: 12px; line-height: 1.55; }
 .power-note span { color: #c9bb9b; }
+.learning-studio { margin: 16px 0 20px; padding: 18px; border: 1px solid #36588e; border-radius: 15px; background: radial-gradient(circle at 100% 0, rgba(76,130,230,.14), transparent 24rem), #0c1525; }
+.learning-copy h4 { margin: 0; font-size: 18px; letter-spacing: -.02em; }
+.learning-copy > p:last-child { max-width: 780px; margin: 8px 0 0; color: #97a5bc; font-size: 12px; line-height: 1.65; }
+.learning-flow { display: grid; grid-template-columns: minmax(13rem, 1.4fr) minmax(10rem, .8fr) auto; gap: 10px; align-items: end; margin-top: 16px; }
+.learning-flow .button { min-height: 42px; }
+.learning-flow .button.listening { color: #fff; border-color: #ff927f; background: #9c493c; animation: learning-pulse 1.2s ease-in-out infinite; }
+.learning-reader { display: flex; justify-content: space-between; gap: 18px; align-items: center; margin-top: 12px; padding: 13px 14px; border: 1px solid #293a57; border-radius: 11px; background: #090f1a; }
+.learning-reader > div { display: grid; gap: 5px; }
+.learn-status { width: fit-content; color: #8795aa; font: 800 9px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .12em; text-transform: uppercase; }
+.learn-status.listening { color: #ffd48a; }
+.learn-status.ok { color: #aaf0c5; }
+.learn-status.error { color: #ffaaa3; }
+.learn-result { color: #dbe6fa; font-size: 13px; }
+.learn-result.learned { color: #aaf0c5; }
+.learn-device { color: #758297; font-size: 11px; }
+.learn-device.connected { color: #8fb2ff; }
+.learning-limit { margin: 11px 0 0; color: #7d899c; font-size: 11px; line-height: 1.55; }
+@keyframes learning-pulse { 50% { box-shadow: 0 0 0 4px rgba(255,146,127,.12); } }
 .command-table { overflow-x: auto; }
 .command-head, .command-row { display: grid; grid-template-columns: minmax(9rem, 1.25fr) minmax(11rem, 1.5fr) minmax(8rem, .8fr) minmax(11rem, 1fr) minmax(12rem, 1fr) 5rem 3rem; gap: 8px; min-width: 1050px; align-items: center; }
 .command-head { padding: 0 10px 8px; color: #7f8ca1; font-size: 10px; }
@@ -147,6 +165,8 @@ footer a { color: #9db9ef; text-decoration: none; }
   .config-panel { margin: 18px 20px; padding: 17px; }
   .config-section-heading { align-items: flex-start; flex-direction: column; }
   .wifi-form { grid-template-columns: 1fr 1fr; }
+  .learning-flow { grid-template-columns: 1fr 1fr; }
+  .learning-flow .button { grid-column: 1 / -1; }
   .wifi-form .button { min-height: 42px; }
   .target-card { grid-template-columns: 1fr; }
   .aftercare { padding: 24px 20px; }
@@ -163,5 +183,7 @@ footer a { color: #9db9ef; text-decoration: none; }
   .actions .button { flex: 1 1 44%; text-align: center; }
   .device-setup-header { flex-direction: column; }
   .wifi-form { grid-template-columns: 1fr; }
+  .learning-flow { grid-template-columns: 1fr; }
+  .learning-reader { align-items: stretch; flex-direction: column; }
   .power-note { flex-direction: column; }
 }

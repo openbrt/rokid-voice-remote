@@ -16,7 +16,7 @@
         <div class="eyebrow">LOCAL VOICE · BLUETOOTH HID · A113</div>
         <h1>说一句，<br /><span>按键就到了。</span></h1>
         <p class="lede">
-          把 Rokid 音箱变成离线语音遥控器。安装、配网、自定义指令、目标设备和遥控键值都在当前页面完成。
+          把 Rokid 音箱变成离线语音遥控器。安装、配网、自定义指令都在当前页面完成；把原遥控器带到电脑边按一下，不用再查 HID 键值。
         </p>
         <div class="traits" aria-label="项目特性">
           <span>全程本地识别</span><span>USB 在线安装</span><span>最多 5 条指令</span>
@@ -159,6 +159,38 @@
             <strong>电源键是切换键</strong>
             <span>“打开”和“关掉”映射到 HID Power 时，无法判断目标当前状态。</span>
           </div>
+          <div class="learning-studio" aria-labelledby="learning-title">
+            <div class="learning-copy">
+              <p class="section-index">REMOTE LEARNING</p>
+              <h4 id="learning-title">按一下原遥控器，自动记住键值</h4>
+              <p>
+                先在电脑系统蓝牙里配对原遥控器，或插入它的 USB 接收器。输入想说的话，
+                点击等待，再按一次原遥控器按键；页面会自动生成拼音并加入映射列表。
+              </p>
+            </div>
+            <div class="learning-flow">
+              <label>
+                <span>① 语音指令</span>
+                <input id="learn-phrase" type="text" maxlength="32" autocomplete="off" placeholder="例如：打开投影">
+              </label>
+              <label>
+                <span>② 发送目标</span>
+                <select id="learn-target"><option value="active">当前连接</option></select>
+              </label>
+              <button id="learn-arm" class="button primary" type="button">③ 等待并记录按键</button>
+            </div>
+            <div class="learning-reader">
+              <div>
+                <span id="learn-status" class="learn-status idle">等待开始</span>
+                <strong id="learn-result" class="learn-result">普通方向键、确认键可直接识别</strong>
+                <small id="learn-device" class="learn-device">媒体键识别不完整时，请选择 HID 遥控器</small>
+              </div>
+              <button id="learn-hid" class="button" type="button">选择 HID 遥控器</button>
+            </div>
+            <p class="learning-limit">
+              红外遥控器必须通过 USB 红外接收器接入电脑；厂商私有蓝牙协议可能无法转换为标准 HID 键值。
+            </p>
+          </div>
           <div class="command-table">
             <div class="command-head">
               <span>语音指令</span><span>拼音</span><span>目标</span><span>遥控按键</span>
@@ -182,7 +214,7 @@
         </div>
         <div class="after-grid">
           <article><span>1</span><strong>配对</strong><p>在电视、投影或中控的蓝牙页面搜索 Rokid Voice Remote。</p></article>
-          <article><span>2</span><strong>映射</strong><p>保持 USB 连接，直接在本页选择目标并配置语音指令与遥控键值。</p></article>
+          <article><span>2</span><strong>学习</strong><p>把原遥控器带到电脑边，输入语音指令并按一下按键，页面自动建立映射。</p></article>
           <article><span>3</span><strong>说话</strong><p>说出“打开投影”等本地指令，音箱发送对应 Bluetooth HID 按键。</p></article>
         </div>
       </section>
