@@ -83,6 +83,13 @@ pairing on the target's own screen is the final setup step. Named targets are
 an optional multi-host feature: they select and connect one bonded host before
 sending, and switching from a TV to a projector is not instantaneous.
 
+After a successful HID connection the daemon stores only that host's public
+Bluetooth address in the application state directory. On the next speaker
+boot it makes one authenticated reconnect attempt; if the host is unavailable,
+it falls back to discoverable/listen mode. A virtual-cable unplug or explicit
+`ctl listen` clears the remembered host. Bluetooth link keys remain owned by
+the factory BSA database.
+
 ## Trust boundaries
 
 Phrase lookup is exact. TSV values are never sourced or evaluated. Target

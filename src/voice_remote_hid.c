@@ -32,9 +32,11 @@
 #define DEFAULT_SOCKET "/run/rokid-voice-remote/hidd.sock"
 #define DEFAULT_UIPC "/data/bluetooth/"
 #define DEFAULT_NAME "Rokid Voice Remote"
+#define DEFAULT_LAST_HOST "/data/rokid-voice-remote/state/last-hid-host"
 #define COMMAND_MAX 512
 #define RESPONSE_MAX 512
 #define CONNECT_TIMEOUT_SECONDS 8
+#define LAST_HOST_PATH_MAX 384
 #define MAX_REPEAT 10
 
 static volatile sig_atomic_t g_stop;
@@ -45,6 +47,9 @@ static bool g_hd_enabled;
 static bool g_hd_connected;
 static BD_ADDR g_connected_addr;
 static BD_ADDR g_enabled_addr;
+static const char *g_last_host_path = DEFAULT_LAST_HOST;
+
+static int write_all(int descriptor, const char *data, size_t length);
 
 static void log_line(const char *level, const char *format, ...)
 {
@@ -89,6 +94,79 @@ static bool parse_addr(const char *text_value, BD_ADDR output)
         output[index] = (UINT8)octets[index];
     }
     return true;
+}
+
+static int load_last_host(BD_ADDR output)
+{
+    FILE *file;
+    char data[64];
+    size_t length;
+
+    file = fopen(g_last_host_path, "r");
+    if (file == NULL) {
+        return -1;
+    }
+    length = fread(data, 1, sizeof(data) - 1, file);
+    if (ferror(file) || !feof(file)) {
+        fclose(file);
+        return -1;
+    }
+    fclose(file);
+    data[length] = '\0';
+    while (length > 0 && (data[length - 1] == '\n' ||
+                          data[length - 1] == '\r' ||
+                          data[length - 1] == ' ' || data[length - 1] == '\t')) {
+        data[--length] = '\0';
+    }
+    return parse_addr(data, output) ? 0 : -1;
+}
+
+static int save_last_host(const BD_ADDR address)
+{
+    char formatted[18];
+    char content[20];
+    char temporary[LAST_HOST_PATH_MAX];
+    int descriptor;
+    int length;
+
+    if (strlen(g_last_host_path) + 5 >= sizeof(temporary)) {
+        log_line("error", "last-host path is too long");
+        return -1;
+    }
+    format_addr(address, formatted);
+    length = snprintf(content, sizeof(content), "%s\n", formatted);
+    snprintf(temporary, sizeof(temporary), "%s.tmp", g_last_host_path);
+    descriptor = open(temporary, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (descriptor < 0 || length < 0 ||
+        write_all(descriptor, content, (size_t)length) != 0 ||
+        fsync(descriptor) != 0) {
+        goto failure;
+    }
+    if (close(descriptor) != 0) {
+        descriptor = -1;
+        goto failure;
+    }
+    descriptor = -1;
+    if (rename(temporary, g_last_host_path) != 0) {
+        goto failure;
+    }
+    log_line("info", "remembered HID host address=%s", formatted);
+    return 0;
+
+failure:
+    if (descriptor >= 0) {
+        (void)close(descriptor);
+    }
+    (void)unlink(temporary);
+    log_line("error", "cannot persist last HID host address=%s", formatted);
+    return -1;
+}
+
+static void clear_last_host(void)
+{
+    if (unlink(g_last_host_path) != 0 && errno != ENOENT) {
+        log_line("error", "cannot clear last HID host: %s", strerror(errno));
+    }
 }
 
 static bool parse_unsigned(const char *text_value, unsigned long maximum,
@@ -245,6 +323,9 @@ static int configure_security(void)
 static void hd_callback(tBSA_HD_EVT event, tBSA_HD_MSG *message)
 {
     char address[18] = "unknown";
+    BD_ADDR remembered_address;
+    bool remember_host = false;
+    bool forget_host = false;
 
     pthread_mutex_lock(&g_state_lock);
     switch (event) {
@@ -252,6 +333,8 @@ static void hd_callback(tBSA_HD_EVT event, tBSA_HD_MSG *message)
         if (message != NULL && message->open.status == BSA_SUCCESS) {
             memcpy(g_connected_addr, message->open.bd_addr, sizeof(BD_ADDR));
             g_hd_connected = true;
+            memcpy(remembered_address, g_connected_addr, sizeof(BD_ADDR));
+            remember_host = true;
             format_addr(g_connected_addr, address);
             log_line("info", "HID host connected address=%s", address);
         } else {
@@ -272,6 +355,7 @@ static void hd_callback(tBSA_HD_EVT event, tBSA_HD_MSG *message)
     case BSA_HD_UNPLUG_EVT:
         g_hd_connected = false;
         memset(g_connected_addr, 0, sizeof(BD_ADDR));
+        forget_host = true;
         log_line("info", "HID host requested virtual-cable unplug");
         break;
     case BSA_HD_DATA_EVT:
@@ -283,6 +367,12 @@ static void hd_callback(tBSA_HD_EVT event, tBSA_HD_MSG *message)
     }
     pthread_cond_broadcast(&g_state_cond);
     pthread_mutex_unlock(&g_state_lock);
+    if (remember_host) {
+        (void)save_last_host(remembered_address);
+    }
+    if (forget_host) {
+        clear_last_host();
+    }
 }
 
 static int open_management(const char *uipc_path)
@@ -615,6 +705,7 @@ static int handle_command(char *command, char *output, size_t output_size)
     }
 
     if (strcmp(verb, "listen") == 0) {
+        clear_last_host();
         return response(output, output_size, listen_for_host() == 0,
                         "listen");
     }
@@ -781,6 +872,8 @@ static int run_daemon(int argc, char **argv)
     const char *socket_path = DEFAULT_SOCKET;
     const char *uipc_path = DEFAULT_UIPC;
     const char *name = DEFAULT_NAME;
+    BD_ADDR last_host;
+    char formatted[18];
     struct sigaction action;
     int index;
     int result;
@@ -792,6 +885,8 @@ static int run_daemon(int argc, char **argv)
             uipc_path = argv[++index];
         } else if (strcmp(argv[index], "--name") == 0 && index + 1 < argc) {
             name = argv[++index];
+        } else if (strcmp(argv[index], "--last-host") == 0 && index + 1 < argc) {
+            g_last_host_path = argv[++index];
         } else {
             fprintf(stderr, "unknown daemon option: %s\n", argv[index]);
             return 2;
@@ -805,9 +900,23 @@ static int run_daemon(int argc, char **argv)
     sigaction(SIGTERM, &action, NULL);
     signal(SIGPIPE, SIG_IGN);
 
-    if (open_management(uipc_path) != 0 || configure_security() != 0 ||
-        set_local_config(name) != 0 ||
-        listen_for_host() != 0) {
+    if (strlen(g_last_host_path) + 5 >= LAST_HOST_PATH_MAX ||
+        open_management(uipc_path) != 0 || configure_security() != 0 ||
+        set_local_config(name) != 0) {
+        close_management();
+        return 1;
+    }
+    if (load_last_host(last_host) == 0) {
+        format_addr(last_host, formatted);
+        log_line("info", "reconnecting remembered HID host address=%s", formatted);
+        if (connect_target(last_host) != 0) {
+            log_line("error", "remembered HID host unavailable; returning to listen mode");
+            if (listen_for_host() != 0) {
+                close_management();
+                return 1;
+            }
+        }
+    } else if (listen_for_host() != 0) {
         close_management();
         return 1;
     }
@@ -879,7 +988,7 @@ static void print_usage(const char *program)
 {
     fprintf(stderr,
             "usage:\n"
-            "  %s daemon [--socket PATH] [--uipc PATH] [--name NAME]\n"
+            "  %s daemon [--socket PATH] [--uipc PATH] [--name NAME] [--last-host PATH]\n"
             "  %s ctl [--socket PATH] status|listen\n"
             "  %s ctl [--socket PATH] target XX:XX:XX:XX:XX:XX\n"
             "  %s ctl [--socket PATH] consumer USAGE [REPEAT]\n"
