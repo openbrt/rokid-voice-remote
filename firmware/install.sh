@@ -178,14 +178,7 @@ fi
 if [ ! -e "$ROOT/config/targets.conf" ]; then
     cp "$PACKAGE/config/targets.conf.example" "$ROOT/config/targets.conf"
 fi
-if [ ! -s "$ROOT/config/web-token" ]; then
-    umask 077
-    od -An -tx1 -N24 /dev/urandom | tr -d ' \n' > "$ROOT/config/.web-token.tmp"
-    [ "$(wc -c < "$ROOT/config/.web-token.tmp")" -eq 48 ] || \
-        fail "configuration token generation failed"
-    mv "$ROOT/config/.web-token.tmp" "$ROOT/config/web-token"
-fi
-umask 022
+rm -f "$ROOT/config/web-token" "$ROOT/config/.web-token.tmp"
 
 chmod 0755 "$ROOT/bin/voice_remote_hid" "$ROOT/bin/voice_remote_config" \
     "$ROOT/bin/voice-listener.sh" \
@@ -193,7 +186,6 @@ chmod 0755 "$ROOT/bin/voice_remote_hid" "$ROOT/bin/voice_remote_config" \
     "$ROOT/bin/paired-devices.sh" "$ROOT/uninstall.sh"
 chmod 0644 "$ROOT/config/commands.tsv" "$ROOT/config/targets.conf" \
     "$ROOT/lua/voice/main.lua" "$ROOT/project.env" "$ROOT/web/"*
-chmod 0600 "$ROOT/config/web-token"
 chmod 0755 "$ROOT" "$ROOT/bin" "$ROOT/lua" "$ROOT/web" "$STATE" "$RUN"
 chmod 0700 "$ROOT/config"
 
@@ -223,10 +215,9 @@ INSTALL_COMPLETE=1
 trap - EXIT INT TERM HUP
 echo "INSTALL_OK root=$ROOT"
 device_ip=$(ip address show 2>/dev/null | awk '/inet / && $2 !~ /^127\./ { sub("/.*", "", $2); print $2; exit }')
-config_token=$(sed -n '1p' "$ROOT/config/web-token")
 if [ -n "$device_ip" ]; then
-    echo "CONFIG_URL http://$device_ip:$CONFIG_PORT/#$config_token"
+    echo "CONFIG_URL http://$device_ip:$CONFIG_PORT/"
 else
-    echo "CONFIG_PAGE port=$CONFIG_PORT token=$config_token"
+    echo "CONFIG_PAGE port=$CONFIG_PORT"
 fi
 echo "Next: learn remote keys over USB, then pair 'Rokid Voice Remote' on the TV/projector"

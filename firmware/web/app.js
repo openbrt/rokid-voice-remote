@@ -18,33 +18,15 @@ const presets = [
   { label: '方向右', kind: 'key', code: '0x4f' }
 ];
 
-const state = { token: '', targets: [], commands: [], paired: [] };
+const state = { targets: [], commands: [], paired: [] };
 const elements = {
   connection: document.querySelector('#connection'),
   targets: document.querySelector('#targets'),
   commands: document.querySelector('#commands'),
   count: document.querySelector('#command-count'),
   toast: document.querySelector('#toast'),
-  authDialog: document.querySelector('#auth-dialog'),
-  authForm: document.querySelector('#auth-form'),
-  tokenInput: document.querySelector('#token-input'),
   pairingMode: document.querySelector('#pairing-mode')
 };
-
-function initialToken() {
-  const hash = window.location.hash.slice(1);
-  if (hash) {
-    try {
-      const value = decodeURIComponent(hash);
-      sessionStorage.setItem('rokid-config-token', value);
-      history.replaceState(null, '', window.location.pathname);
-      return value;
-    } catch (_) {
-      return '';
-    }
-  }
-  return sessionStorage.getItem('rokid-config-token') || '';
-}
 
 function showToast(message, isError = false) {
   elements.toast.textContent = message;
@@ -60,15 +42,8 @@ function setConnection(label, type) {
 
 async function api(path, options = {}) {
   const headers = new Headers(options.headers || {});
-  headers.set('X-Config-Token', state.token);
   const response = await fetch(path, { ...options, headers, cache: 'no-store' });
   const body = await response.text();
-  if (response.status === 401) {
-    sessionStorage.removeItem('rokid-config-token');
-    setConnection('需要令牌', 'error');
-    elements.authDialog.showModal();
-    throw new Error('配置令牌无效');
-  }
   if (!response.ok) throw new Error(body.trim() || `HTTP ${response.status}`);
   return body;
 }
@@ -254,10 +229,6 @@ function validateAndSerialize() {
 }
 
 async function loadConfiguration() {
-  if (!state.token) {
-    elements.authDialog.showModal();
-    return;
-  }
   setConnection('正在连接', 'pending');
   try {
     const [commandsText, targetsText, pairedText] = await Promise.all([
@@ -327,13 +298,4 @@ document.querySelector('#add-command').addEventListener('click', () => {
 
 document.querySelector('#reload').addEventListener('click', loadConfiguration);
 document.querySelector('#save').addEventListener('click', saveConfiguration);
-elements.authForm.addEventListener('submit', (event) => {
-  event.preventDefault();
-  state.token = elements.tokenInput.value.trim();
-  sessionStorage.setItem('rokid-config-token', state.token);
-  elements.authDialog.close();
-  loadConfiguration();
-});
-
-state.token = initialToken();
 loadConfiguration();

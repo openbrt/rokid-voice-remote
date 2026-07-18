@@ -29,7 +29,7 @@ GitHub Pages installer              browser on trusted LAN
       | WebUSB ADB tcp:8090                  |
       +----------------------+---------------+
                              |
-                  HTTP :8090 + X-Config-Token
+                         HTTP :8090
       |
 voice_remote_config
       | validate all rows, ranges and duplicates
@@ -43,10 +43,10 @@ restart voice listener
 PBKDF2-SHA1 派生为 256 位 PSK 后再发送。页面不会把明文密码写入设备命令行或
 安装日志，也不直接编辑 `wpa_supplicant.conf`。
 
-静态页面不依赖 CDN。配置令牌由安装器从 `/dev/urandom` 生成，权限为 `0600`，
-通过 URL fragment 导入浏览器的 session storage；fragment 不会随 HTTP 请求发送。
-API 仍要求 `X-Config-Token`，并限制头部、正文和配置大小，拒绝 chunked 请求、
-路径遍历、控制字符、重复短语、未知目标以及越界 HID usage。
+静态页面不依赖 CDN。内置配置服务刻意采用可信局域网模型，不再叠加第二层应用凭据；
+Wi-Fi 访问权限就是这一路径的安全边界。API 保持同源访问，并限制头部、正文和配置
+大小，拒绝 chunked 请求、路径遍历、控制字符、重复短语、未知目标以及越界 HID
+usage。
 
 ## Why the log bridge exists
 
@@ -96,11 +96,11 @@ from the BSA callback thread). If that attempt fails, the daemon returns to
 listen mode rather than retrying indefinitely. Virtual-cable unplug never
 reconnects.
 
-The authenticated configuration service exposes `POST /api/hid/listen` for
-multi-host onboarding. It forwards only the fixed `listen` command over the
-local HID Unix socket; no caller-supplied shell command or Bluetooth address is
-accepted. Entering this mode disconnects the active host and clears automatic
-reconnect so another TV can pair through its own on-screen Bluetooth UI.
+The configuration service exposes `POST /api/hid/listen` for multi-host
+onboarding. It forwards only the fixed `listen` command over the local HID Unix
+socket; no caller-supplied shell command or Bluetooth address is accepted.
+Entering this mode disconnects the active host and clears automatic reconnect
+so another TV can pair through its own on-screen Bluetooth UI.
 
 ## Trust boundaries
 

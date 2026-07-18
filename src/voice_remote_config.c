@@ -39,7 +39,6 @@
 typedef struct {
     char method[8];
     char path[160];
-    char token[160];
     size_t content_length;
     char *body;
 } http_request;
@@ -312,12 +311,6 @@ static int receive_request(int client, char **storage, http_request *request)
             content_length_seen = true;
         } else if (strcasecmp(line, "Transfer-Encoding") == 0) {
             transfer_encoding_seen = true;
-        } else if (strcasecmp(line, "X-Config-Token") == 0) {
-            if (strlen(value) >= sizeof(request->token)) {
-                free(buffer);
-                return -2;
-            }
-            strcpy(request->token, value);
         }
     }
     if (transfer_encoding_seen ||
@@ -350,42 +343,6 @@ static int receive_request(int client, char **storage, http_request *request)
     request->body[request->content_length] = '\0';
     *storage = buffer;
     return 0;
-}
-
-static bool secure_equal(const char *left, const char *right)
-{
-    size_t left_length = strlen(left);
-    size_t right_length = strlen(right);
-    size_t maximum = left_length > right_length ? left_length : right_length;
-    unsigned int difference = (unsigned int)(left_length ^ right_length);
-    size_t index;
-
-    for (index = 0; index < maximum; ++index) {
-        unsigned char a = index < left_length ? (unsigned char)left[index] : 0;
-        unsigned char b = index < right_length ? (unsigned char)right[index] : 0;
-        difference |= (unsigned int)(a ^ b);
-    }
-    return difference == 0;
-}
-
-static bool authorized(const char *root, const char *provided)
-{
-    char path[PATH_MAX];
-    char *token;
-    size_t length;
-    bool result;
-
-    if (snprintf(path, sizeof(path), "%s/config/web-token", root) >=
-        (int)sizeof(path) ||
-        read_file(path, 256, &token, &length) != 0) {
-        return false;
-    }
-    while (length > 0 && (token[length - 1] == '\n' || token[length - 1] == '\r')) {
-        token[--length] = '\0';
-    }
-    result = length >= 32 && secure_equal(token, provided);
-    free(token);
-    return result;
 }
 
 static int hex_value(char value)
@@ -942,8 +899,6 @@ static int handle_client(int client, const char *root, bool no_restart)
         result = send_root_file(client, root, "style.css", "text/css; charset=utf-8");
     } else if (strncmp(request.path, "/api/", 5) != 0) {
         result = send_text(client, 404, "Not Found", "not found\n");
-    } else if (!authorized(root, request.token)) {
-        result = send_text(client, 401, "Unauthorized", "invalid configuration token\n");
     } else if (strcmp(request.method, "GET") == 0 &&
                strcmp(request.path, "/api/commands") == 0) {
         snprintf(path, sizeof(path), "%s/config/commands.tsv", root);
