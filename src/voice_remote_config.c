@@ -22,6 +22,7 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/un.h>
 #include <unistd.h>
 
 #define DEFAULT_ROOT "/data/rokid-voice-remote"
@@ -33,6 +34,7 @@
 #define MAX_STATIC (512U * 1024U)
 #define MAX_COMMANDS 5
 #define MAX_TARGETS 32
+#define HID_SOCKET "/run/rokid-voice-remote/hidd.sock"
 
 typedef struct {
     char method[8];
@@ -113,6 +115,37 @@ static int send_text(int client, int status, const char *reason,
 {
     return send_response(client, status, reason, "text/plain; charset=utf-8",
                          message, strlen(message), true);
+}
+
+static int enter_hid_pairing_mode(void)
+{
+    struct sockaddr_un address;
+    char reply[256];
+    int descriptor;
+    ssize_t count;
+
+    if (strlen(HID_SOCKET) >= sizeof(address.sun_path)) {
+        return -1;
+    }
+    descriptor = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (descriptor < 0) {
+        return -1;
+    }
+    memset(&address, 0, sizeof(address));
+    address.sun_family = AF_UNIX;
+    strncpy(address.sun_path, HID_SOCKET, sizeof(address.sun_path) - 1);
+    if (connect(descriptor, (struct sockaddr *)&address, sizeof(address)) != 0 ||
+        write_all(descriptor, "listen", strlen("listen")) != 0) {
+        close(descriptor);
+        return -1;
+    }
+    count = read(descriptor, reply, sizeof(reply) - 1);
+    close(descriptor);
+    if (count <= 0) {
+        return -1;
+    }
+    reply[count] = '\0';
+    return strncmp(reply, "OK ", 3) == 0 ? 0 : -1;
 }
 
 static int read_file(const char *path, size_t maximum, char **output,
@@ -935,6 +968,15 @@ static int handle_client(int client, const char *root, bool no_restart)
     } else if (strcmp(request.method, "GET") == 0 &&
                strcmp(request.path, "/api/status") == 0) {
         result = send_text(client, 200, "OK", "OK configuration service ready\n");
+    } else if (strcmp(request.method, "POST") == 0 &&
+               strcmp(request.path, "/api/hid/listen") == 0) {
+        if (enter_hid_pairing_mode() != 0) {
+            result = send_text(client, 503, "Service Unavailable",
+                               "cannot enter Bluetooth pairing mode\n");
+        } else {
+            result = send_text(client, 200, "OK",
+                               "OK Bluetooth pairing mode enabled\n");
+        }
     } else if (strcmp(request.method, "POST") == 0 &&
                strcmp(request.path, "/api/config") == 0) {
         result = handle_save(client, root, &request, &restart_requested);

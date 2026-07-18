@@ -66,6 +66,7 @@ const elements = {
   count: element<HTMLElement>("config-command-count"),
   toast: element<HTMLElement>("config-toast"),
   addTarget: element<HTMLButtonElement>("config-add-target"),
+  pairingMode: element<HTMLButtonElement>("config-pairing-mode"),
   addCommand: element<HTMLButtonElement>("config-add-command"),
   reload: element<HTMLButtonElement>("config-reload"),
   save: element<HTMLButtonElement>("config-save"),
@@ -479,6 +480,22 @@ async function saveConfiguration() {
   }
 }
 
+async function enterPairingMode() {
+  const confirmed = window.confirm(
+    "这会断开当前电视/投影。确定要让音箱进入新增设备配对模式吗？",
+  );
+  if (!state.request || !confirmed) return;
+  elements.pairingMode.disabled = true;
+  try {
+    await state.request("/api/hid/listen", { method: "POST" });
+    showConfigToast("已进入配对模式；现在请在目标设备屏幕上添加 Rokid Voice Remote");
+  } catch (error) {
+    showConfigToast(error instanceof Error ? error.message : String(error), true);
+  } finally {
+    elements.pairingMode.disabled = false;
+  }
+}
+
 elements.addTarget.addEventListener("click", () => {
   let index = state.targets.length + 1;
   while (state.targets.some((target) => target.name === `device${index}`)) index += 1;
@@ -486,6 +503,7 @@ elements.addTarget.addEventListener("click", () => {
   renderTargets();
   renderCommands();
 });
+elements.pairingMode.addEventListener("click", enterPairingMode);
 
 elements.addCommand.addEventListener("click", () => {
   if (state.commands.length >= MAX_COMMANDS) return;
