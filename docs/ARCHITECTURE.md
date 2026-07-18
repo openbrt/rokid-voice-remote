@@ -90,6 +90,12 @@ it falls back to discoverable/listen mode. A virtual-cable unplug or explicit
 `ctl listen` clears the remembered host. Bluetooth link keys remain owned by
 the factory BSA database.
 
+Some Android HID hosts drop an otherwise healthy profile while idle. A normal
+HID close schedules one reconnect attempt from the daemon's control loop (not
+from the BSA callback thread). If that attempt fails, the daemon returns to
+listen mode rather than retrying indefinitely. Virtual-cable unplug never
+reconnects.
+
 ## Trust boundaries
 
 Phrase lookup is exact. TSV values are never sourced or evaluated. Target

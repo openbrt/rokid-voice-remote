@@ -45,6 +45,7 @@ static pthread_cond_t g_state_cond = PTHREAD_COND_INITIALIZER;
 static bool g_mgt_connected;
 static bool g_hd_enabled;
 static bool g_hd_connected;
+static bool g_reconnect_pending;
 static BD_ADDR g_connected_addr;
 static BD_ADDR g_enabled_addr;
 static const char *g_last_host_path = DEFAULT_LAST_HOST;
@@ -348,12 +349,14 @@ static void hd_callback(tBSA_HD_EVT event, tBSA_HD_MSG *message)
             format_addr(message->close.bd_addr, address);
         }
         g_hd_connected = false;
+        g_reconnect_pending = g_hd_enabled;
         memset(g_connected_addr, 0, sizeof(BD_ADDR));
         log_line("info", "HID host disconnected address=%s status=%d", address,
                  message != NULL ? message->close.status : -1);
         break;
     case BSA_HD_UNPLUG_EVT:
         g_hd_connected = false;
+        g_reconnect_pending = false;
         memset(g_connected_addr, 0, sizeof(BD_ADDR));
         forget_host = true;
         log_line("info", "HID host requested virtual-cable unplug");
@@ -451,17 +454,24 @@ static int disable_hid(void)
     tBSA_HD_DISABLE parameters;
     tBSA_STATUS status;
 
+    pthread_mutex_lock(&g_state_lock);
     if (!g_hd_enabled) {
+        pthread_mutex_unlock(&g_state_lock);
         return 0;
     }
+    g_hd_enabled = false;
+    g_reconnect_pending = false;
+    pthread_mutex_unlock(&g_state_lock);
     BSA_HdDisableInit(&parameters);
     status = BSA_HdDisable(&parameters);
     if (status != BSA_SUCCESS) {
+        pthread_mutex_lock(&g_state_lock);
+        g_hd_enabled = true;
+        pthread_mutex_unlock(&g_state_lock);
         log_line("error", "BSA_HdDisable failed status=%d", status);
         return -1;
     }
     pthread_mutex_lock(&g_state_lock);
-    g_hd_enabled = false;
     g_hd_connected = false;
     memset(g_connected_addr, 0, sizeof(BD_ADDR));
     pthread_mutex_unlock(&g_state_lock);
@@ -549,6 +559,30 @@ static int connect_target(const BD_ADDR address)
         return -1;
     }
     return wait_for_connection(address);
+}
+
+static int reconnect_after_disconnect(void)
+{
+    BD_ADDR last_host;
+    char formatted[18];
+    bool reconnect;
+
+    pthread_mutex_lock(&g_state_lock);
+    reconnect = g_reconnect_pending && !g_hd_connected;
+    g_reconnect_pending = false;
+    pthread_mutex_unlock(&g_state_lock);
+    if (!reconnect || load_last_host(last_host) != 0) {
+        return 0;
+    }
+
+    format_addr(last_host, formatted);
+    log_line("info", "HID link dropped; reconnecting remembered host address=%s",
+             formatted);
+    if (connect_target(last_host) == 0) {
+        return 0;
+    }
+    log_line("error", "HID host reconnect failed; returning to listen mode");
+    return listen_for_host();
 }
 
 static bool is_connected(void)
@@ -841,6 +875,9 @@ static int run_server(const char *socket_path)
             break;
         }
         if (!FD_ISSET(server, &read_set)) {
+            if (reconnect_after_disconnect() != 0) {
+                break;
+            }
             continue;
         }
         client = accept(server, NULL, NULL);
